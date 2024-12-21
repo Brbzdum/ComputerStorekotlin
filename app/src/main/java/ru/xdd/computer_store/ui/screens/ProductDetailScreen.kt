@@ -3,10 +3,11 @@ package ru.xdd.computer_store.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +30,7 @@ import coil.request.ImageRequest
 import ru.xdd.computer_store.R
 import ru.xdd.computer_store.model.ProductEntity
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
     product: ProductEntity?,
@@ -79,11 +82,11 @@ fun ProductDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(text = product.name, style = MaterialTheme.typography.h5, fontWeight = FontWeight.Bold)
+                Text(text = product.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = product.description)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "Цена: ${product.price} ₽", style = MaterialTheme.typography.subtitle1)
+                Text(text = "Цена: ${product.price} ₽", style = MaterialTheme.typography.titleSmall)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Поле для ввода отзыва (пример)

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">computer_store</string>
+    <string name="quantity_label">Количество: %d</string>
 </resources>

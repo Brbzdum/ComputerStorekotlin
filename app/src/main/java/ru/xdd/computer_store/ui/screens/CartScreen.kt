@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ru.xdd.computer_store.ui.viewmodel.CartViewModel
 import ru.xdd.computer_store.model.CartItemEntity
 import ru.xdd.computer_store.model.ProductEntity
+import ru.xdd.computer_store.ui.cart.CartItemRow
 
 @Composable
 fun CartScreen(

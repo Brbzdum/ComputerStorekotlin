@@ -19,15 +19,16 @@ import ru.xdd.computer_store.utils.Converters
     ],
     indices = [Index(value = ["parentProductId"])]
 )
-@TypeConverters(Converters::class) // Добавляем TypeConverters для работы со списком отзывов
+@TypeConverters(Converters::class)
 data class ProductEntity(
     @PrimaryKey(autoGenerate = true) val productId: Long = 0,
-    val parentProductId: Long? = null, // если товар является аксессуаром, указываем основной товар
+    val parentProductId: Long? = null,
     val name: String,
     val description: String,
     val category: String,
     val price: Double,
     val stock: Int,
-    val rating: Float = 0.0f, // Рейтинг товара (от 0 до 5)
-    val reviews: List<String> = emptyList() // Список отзывов о товаре
+    val rating: Float = 0.0f,
+    val reviews: List<String> = emptyList(),
+    val imageUrl: String = " "
 )

@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ru.xdd.computer_store.model.ProductEntity
+import ru.xdd.computer_store.ui.components.ProductItem
 
 import ru.xdd.computer_store.ui.viewmodel.CatalogViewModel
 
@@ -76,7 +77,9 @@ fun CatalogScreen(
         } else {
             LazyColumn {
                 items(products) { product ->
-                    ProductItem(product = product, onClick = { onProductClick(product) })
+                    ProductItem(product = product, onProductClick = { clickedProduct ->
+                        onProductClick(clickedProduct) // Передаем клик дальше
+                    })
                     Divider()
                 }
             }

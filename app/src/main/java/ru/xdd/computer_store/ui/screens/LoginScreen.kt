@@ -47,7 +47,7 @@ fun LoginScreen(
         // Навигация теперь внутри LaunchedEffect, зависящего от user
         LaunchedEffect(user) {
             if (user != null) {
-                if (user.role == "admin") {
+                if (user!!.role == "admin") {
                     navController.navigate("admin") {
                         popUpTo("login") { inclusive = true } // Предотвращаем возврат на экран логина
                     }
