@@ -1,6 +1,7 @@
 package ru.xdd.computer_store.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -36,19 +37,22 @@ fun RegistrationScreen(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
-            keyboardType = KeyboardType.Email
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Пароль") },
-            visualTransformation = PasswordVisualTransformation()
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         OutlinedTextField(
             value = role,
             onValueChange = { role = it },
-            label = { Text("Роль (user/admin)") }
+            label = { Text("Роль (user/admin)") },
+            keyboardOptions = KeyboardOptions.Default
         )
+
 
         Button(onClick = {
             viewModel.register(username, email, password, role)

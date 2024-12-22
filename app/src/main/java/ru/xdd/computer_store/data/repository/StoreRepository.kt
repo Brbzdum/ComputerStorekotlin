@@ -12,6 +12,7 @@ class StoreRepository(
     private val orderDao: OrderDao
 ) {
 
+
     // Пользователи
     suspend fun createUser(username: String, email: String, passwordHash: String, role: String = "user") {
         userDao.insertUser(UserEntity(username = username, email = email, passwordHash = passwordHash, role = role))

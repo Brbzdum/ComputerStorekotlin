@@ -16,20 +16,16 @@ fun ReviewsScreen(
     productId: Long,
     userId: Long,
     repository: StoreRepository,
-    paddingValues: PaddingValues // Принимаем paddingValues
+    paddingValues: PaddingValues
 ) {
-    var reviews by remember { mutableStateOf<List<ReviewEntity>>(emptyList()) }
+    val reviews by repository.getReviewsForProductFlow(productId).collectAsState(initial = emptyList())
     var comment by remember { mutableStateOf("") }
     var rating by remember { mutableStateOf("5") }
-
-    LaunchedEffect(productId) {
-        reviews = repository.getReviewsForProduct(productId)
-    }
 
     Column(
         modifier = Modifier
             .padding(16.dp)
-            .padding(paddingValues) // Используем paddingValues
+            .padding(paddingValues)
     ) {
         Text(text = "Отзывы о товаре", style = MaterialTheme.typography.titleLarge)
         LazyColumn {
@@ -48,19 +44,18 @@ fun ReviewsScreen(
             value = rating,
             onValueChange = { rating = it },
             label = { Text("Оценка (1-5)") },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxWidth()
         )
         OutlinedTextField(
             value = comment,
             onValueChange = { comment = it },
             label = { Text("Комментарий") },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxWidth()
         )
 
         Button(onClick = {
             val r = rating.toIntOrNull() ?: 5
             runBlocking { repository.addReview(userId, productId, r, comment) }
-            runBlocking { reviews = repository.getReviewsForProduct(productId) }
             comment = ""
             rating = "5"
         }) {
@@ -68,3 +63,4 @@ fun ReviewsScreen(
         }
     }
 }
+

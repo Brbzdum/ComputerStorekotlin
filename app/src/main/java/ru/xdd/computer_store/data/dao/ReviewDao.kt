@@ -16,5 +16,6 @@ interface ReviewDao {
 
     @Query("DELETE FROM reviews WHERE reviewId = :reviewId")
     suspend fun deleteReview(reviewId: Long)
+
 }
 
