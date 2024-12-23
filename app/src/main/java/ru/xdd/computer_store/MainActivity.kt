@@ -14,6 +14,7 @@ import ru.xdd.computer_store.ui.screens.SetupNavGraph
 import ru.xdd.computer_store.ui.theme.Computer_storeTheme
 import ru.xdd.computer_store.ui.viewmodel.MainViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import ru.xdd.computer_store.ui.navigation.SetupNavGraph
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

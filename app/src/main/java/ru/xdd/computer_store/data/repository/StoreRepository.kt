@@ -15,11 +15,12 @@ class StoreRepository(
 
     // Пользователи
     suspend fun createUser(username: String, email: String, passwordHash: String, role: String = "user") {
-        userDao.insertUser(UserEntity(username = username, email = email, passwordHash = passwordHash, role = role))
+        userDao.insertUser(UserEntity(username = username, email = email, passwordHash = passwordHash, role = Role.valueOf(role.uppercase())))
     }
 
     suspend fun getUserByUsername(username: String): UserEntity? {
         return userDao.getUserByUsername(username)
+            ?: throw IllegalArgumentException("Пользователь с таким именем не найден")
     }
 
 
@@ -34,6 +35,7 @@ class StoreRepository(
 
 
     suspend fun getProductById(id: Long): ProductEntity? = productDao.getProductById(id)
+        ?: throw IllegalArgumentException("Товар не найден")
 
     suspend fun updateProduct(product: ProductEntity) {
         productDao.updateProduct(product)
@@ -48,15 +50,20 @@ class StoreRepository(
     fun getOrdersForUserFlow(userId: Long): Flow<List<OrderEntity>> = orderDao.getOrdersForUserFlow(userId)
     // Работа с отзывами
     suspend fun addReview(userId: Long, productId: Long, rating: Int, comment: String) {
+        val hasPurchased = orderDao.hasCompletedOrderForProduct(userId, productId)
+        if (!hasPurchased) throw IllegalArgumentException("Пользователь не завершил покупку данного товара")
+
         val review = ReviewEntity(
             userId = userId,
             productId = productId,
             rating = rating,
-            comment = comment,
-            createdAt = System.currentTimeMillis()
+            comment = comment
         )
         reviewDao.insertReview(review)
     }
+
+
+
 
 
 
@@ -90,7 +97,7 @@ class StoreRepository(
         val order = OrderEntity(
             userId = userId,
             orderDate = System.currentTimeMillis(),
-            orderStatus = "NEW",
+            orderStatus = OrderStatus.НОВЫЙ,
             totalAmount = totalAmount,
             shippingAddress = shippingAddress
         )

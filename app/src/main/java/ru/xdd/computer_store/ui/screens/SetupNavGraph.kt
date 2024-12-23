@@ -1,212 +1,107 @@
-package ru.xdd.computer_store.ui.screens
+package ru.xdd.computer_store.ui.navigation
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import ru.xdd.computer_store.model.ProductEntity
-import ru.xdd.computer_store.ui.components.ProductItem
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import ru.xdd.computer_store.ui.screens.*
+import ru.xdd.computer_store.ui.viewmodel.LoginViewModel
 import ru.xdd.computer_store.ui.viewmodel.MainViewModel
+import ru.xdd.computer_store.ui.viewmodel.RegistrationViewModel
 
 @Composable
-fun CatalogScreen(
-    onProductClick: (ProductEntity) -> Unit,
-    onCartClick: () -> Unit,
-    viewModel: MainViewModel
+fun SetupNavGraph(
+    navController: NavHostController,
+    mainViewModel: MainViewModel
 ) {
-    val products by viewModel.filteredProducts.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
-    val isLoading by viewModel.cartIsLoading.collectAsState()
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Каталог", style = MaterialTheme.typography.headlineMedium)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { viewModel.updateSearchQuery(it) },
-            label = { Text("Поиск товаров") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(products) { product ->
-                ProductItem(product = product, onClick = { onProductClick(product) })
-                Divider()
-            }
+    NavHost(navController = navController, startDestination = "catalog") {
+        // Каталог товаров
+        composable("catalog") {
+            CatalogScreen(
+                onProductClick = { product ->
+                    navController.navigate("productDetail/${product.productId}")
+                },
+                onCartClick = {
+                    navController.navigate("cart")
+                },
+                viewModel = mainViewModel
+            )
         }
 
-        FloatingActionButton(onClick = onCartClick, modifier = Modifier.align(Alignment.End)) {
-            Icon(Icons.Default.ShoppingCart, contentDescription = "Корзина")
-        }
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        }
-    }
-}
-
-@Composable
-fun ProductDetailScreen(
-    productId: Long,
-    onAddToCart: (Long) -> Unit,
-    viewModel: MainViewModel
-) {
-    val product = viewModel.products.value.find { it.productId == productId }
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        product?.let {
-            Text(it.name, style = MaterialTheme.typography.headlineMedium)
-            Text("Цена: ${it.price} ₽")
-            Text("Описание: ${it.description}")
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text("Аксессуары:", style = MaterialTheme.typography.headlineSmall)
-            LazyColumn {
-                items(it.accessories) { accessory ->
-                    Text("- ${accessory.name}")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(onClick = { onAddToCart(productId) }) {
-                Text("Добавить в корзину")
-            }
-        } ?: Text("Товар не найден")
-    }
-}
-
-@Composable
-fun CartScreen(
-    onCheckout: () -> Unit,
-    viewModel: MainViewModel
-) {
-    val cartItems by viewModel.cartItems.collectAsState()
-    val totalAmount by viewModel.totalAmount.collectAsState()
-    val isLoading by viewModel.cartIsLoading.collectAsState()
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Корзина", style = MaterialTheme.typography.headlineMedium)
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        } else if (cartItems.isEmpty()) {
-            Text("Ваша корзина пуста", style = MaterialTheme.typography.bodyLarge)
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(cartItems) { cartItem ->
-                    Row(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                        Text(cartItem.productName, modifier = Modifier.weight(1f))
-                        Text("${cartItem.price} ₽")
-                        IconButton(onClick = { viewModel.removeFromCart(cartItem.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Удалить")
+        // Детали товара
+        composable(
+            route = "productDetail/{productId}",
+            arguments = listOf(navArgument("productId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val productId = backStackEntry.arguments?.getLong("productId")
+            productId?.let {
+                ProductDetailScreen(
+                    productId = it,
+                    onAddToCart = { id ->
+                        if (!mainViewModel.isLoggedIn.value) {
+                            navController.navigate("login")
+                        } else {
+                            mainViewModel.addToCart(userId = mainViewModel.currentUserId, productId = id, quantity = 1)
+                            navController.navigate("cart")
                         }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("Итого: ${totalAmount} ₽", style = MaterialTheme.typography.bodyLarge)
-
-            Button(onClick = onCheckout, modifier = Modifier.fillMaxWidth()) {
-                Text("Оформить заказ")
+                    },
+                    viewModel = mainViewModel
+                )
             }
         }
-    }
-}
 
-@Composable
-fun ReviewsScreen(
-    productId: Long,
-    viewModel: MainViewModel
-) {
-    val reviews by viewModel.reviews.collectAsState()
-    var reviewText by remember { mutableStateOf("") }
-    var rating by remember { mutableStateOf(5) }
-    val isLoading by viewModel.reviewIsLoading.collectAsState()
+        // Корзина
+        composable("cart") {
+            CartScreen(
+                onCheckout = {
+                    navController.navigate("checkout")
+                },
+                viewModel = mainViewModel
+            )
+        }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Отзывы", style = MaterialTheme.typography.headlineMedium)
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(reviews) { review ->
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Text("Оценка: ${review.rating}")
-                        Text("Комментарий: ${review.comment}")
+        // Оформление заказа
+        composable("checkout") {
+            CheckoutScreen(
+                onOrderPlaced = {
+                    navController.navigate("catalog") {
+                        popUpTo("catalog") { inclusive = true }
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text("Оставить отзыв", style = MaterialTheme.typography.headlineSmall)
-
-            OutlinedTextField(
-                value = reviewText,
-                onValueChange = { reviewText = it },
-                label = { Text("Комментарий") },
-                modifier = Modifier.fillMaxWidth()
+                },
+                viewModel = mainViewModel
             )
-            OutlinedTextField(
-                value = rating.toString(),
-                onValueChange = { rating = it.toIntOrNull() ?: 5 },
-                label = { Text("Оценка (1-5)") },
-                modifier = Modifier.fillMaxWidth()
-            )
+        }
 
-            Button(onClick = {
-                viewModel.addReview(productId, reviewText, rating)
-                reviewText = ""
-                rating = 5
-            }, modifier = Modifier.fillMaxWidth()) {
-                Text("Добавить отзыв")
+        // Отзывы
+        composable(
+            route = "reviews/{productId}",
+            arguments = listOf(navArgument("productId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val productId = backStackEntry.arguments?.getLong("productId")
+            productId?.let {
+                ReviewsScreen(
+                    productId = it,
+                    viewModel = mainViewModel
+                )
             }
         }
-    }
-}
 
-@Composable
-fun CheckoutScreen(
-    onOrderPlaced: () -> Unit,
-    viewModel: MainViewModel
-) {
-    var address by remember { mutableStateOf("") }
-    val isLoading by viewModel.cartIsLoading.collectAsState()
+        // Авторизация
+        // Авторизация
+        composable("login") {
+            val loginViewModel: LoginViewModel = viewModel()
+            LoginScreen(navController = navController, viewModel = loginViewModel)
+        }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Оформление заказа", style = MaterialTheme.typography.headlineMedium)
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-        } else {
-            OutlinedTextField(
-                value = address,
-                onValueChange = { address = it },
-                label = { Text("Адрес доставки") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(onClick = {
-                viewModel.placeOrder(viewModel.cartItems.value.map { it.productId to it.quantity }, address)
-                onOrderPlaced()
-            }, modifier = Modifier.fillMaxWidth()) {
-                Text("Завершить заказ")
-            }
+        // Регистрация
+        composable("registration") {
+            val registrationViewModel: RegistrationViewModel = viewModel()
+            RegistrationScreen(navController = navController, viewModel = registrationViewModel)
         }
     }
 }

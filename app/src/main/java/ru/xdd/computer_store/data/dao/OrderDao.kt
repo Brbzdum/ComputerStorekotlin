@@ -10,6 +10,15 @@ import ru.xdd.computer_store.model.OrderItemEntity
 
 @Dao
 interface OrderDao {
+    @Query(
+        """
+        SELECT COUNT(*) > 0 
+        FROM orders o
+        JOIN order_items oi ON o.orderId = oi.orderId
+        WHERE o.userId = :userId AND oi.productId = :productId AND o.orderStatus = 'ЗАВЕРШЁН'
+        """
+    )
+    suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long): Boolean
     @Insert
     suspend fun insertOrder(order: OrderEntity): Long
 

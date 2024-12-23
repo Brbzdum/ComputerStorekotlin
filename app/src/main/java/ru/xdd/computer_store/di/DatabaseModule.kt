@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import ru.xdd.computer_store.data.repository.StoreRepository
 import ru.xdd.computer_store.model.AppDatabase
 import ru.xdd.computer_store.data.dao.*
@@ -17,8 +19,11 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
-        return AppDatabase.getDatabase(context)
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+        scope: CoroutineScope
+    ): AppDatabase {
+        return AppDatabase.getDatabase(context, scope)
     }
 
     @Provides
@@ -32,5 +37,12 @@ object DatabaseModule {
             orderDao = db.orderDao()
         )
     }
+
+    @Provides
+    @Singleton
+    fun provideCoroutineScope(): CoroutineScope {
+        return CoroutineScope(Dispatchers.IO)
+    }
 }
+
 

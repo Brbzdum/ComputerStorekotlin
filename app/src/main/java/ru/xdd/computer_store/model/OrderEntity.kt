@@ -5,6 +5,12 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
+enum class OrderStatus {
+    НОВЫЙ,
+    В_ПРОЦЕССЕ,
+    ЗАВЕРШЁН
+}
+
 @Entity(
     tableName = "orders",
     foreignKeys = [
@@ -21,7 +27,7 @@ data class OrderEntity(
     @PrimaryKey(autoGenerate = true) val orderId: Long = 0,
     val userId: Long,
     val orderDate: Long,
-    val orderStatus: String,
+    val orderStatus: OrderStatus,
     val totalAmount: Double,
     val shippingAddress: String
 )

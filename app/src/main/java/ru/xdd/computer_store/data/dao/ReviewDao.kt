@@ -8,6 +8,7 @@ import ru.xdd.computer_store.model.ReviewEntity
 
 @Dao
 interface ReviewDao {
+
     @Insert
     suspend fun insertReview(review: ReviewEntity): Long
 

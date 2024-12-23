@@ -29,6 +29,6 @@ data class ReviewEntity(
     val productId: Long,
     val rating: Int,
     val comment: String,
-    val createdAt: Long
+    val createdAt: Long = System.currentTimeMillis()
 )
 
