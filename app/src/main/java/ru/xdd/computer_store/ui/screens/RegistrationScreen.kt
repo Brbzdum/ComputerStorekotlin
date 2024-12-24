@@ -21,7 +21,6 @@ fun RegistrationScreen(
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("user") }
     val errorMessage by viewModel.errorMessage.collectAsState(initial = null)
     val registrationSuccess by viewModel.registrationSuccess.collectAsState(initial = false)
 
@@ -46,27 +45,24 @@ fun RegistrationScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
-        OutlinedTextField(
-            value = role,
-            onValueChange = { role = it },
-            label = { Text("Роль (user/admin)") },
-            keyboardOptions = KeyboardOptions.Default
-        )
 
-
-        Button(onClick = {
-            viewModel.register(username, email, password, role)
-        }) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                viewModel.register(username, email, password)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Зарегистрироваться")
         }
 
-        errorMessage?.let { Text(it, color = Color.Red) }
+        errorMessage?.let { Text(it, color = Color.Red, modifier = Modifier.padding(top = 8.dp)) }
 
         // Переход на экран логина после успешной регистрации
         LaunchedEffect(registrationSuccess) {
             if (registrationSuccess) {
                 navController.navigate("login") {
-                    popUpTo("registration") { inclusive = true }
+                    popUpTo("register") { inclusive = true }
                 }
             }
         }

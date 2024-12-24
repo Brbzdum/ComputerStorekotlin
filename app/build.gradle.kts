@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "ru.xdd.computer_store"
-        minSdk = 35
+        minSdk = 29
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -50,15 +50,16 @@ android {
 }
 
 dependencies {
+
+    implementation("io.insert-koin:koin-androidx-compose:4.0.0")
     implementation ("com.google.code.gson:gson:2.10.1")
     implementation("io.coil-kt:coil-compose:2.2.2")
     implementation("org.mindrot:jbcrypt:0.4")
-    implementation ("androidx.compose.material3:material3:1.3.1")
     implementation ("androidx.hilt:hilt-navigation-compose:1.2.0")
     // Dagger Hilt
-    implementation("com.google.dagger:hilt-android:2.48")
+    implementation("com.google.dagger:hilt-android:2.49")
     implementation(libs.androidx.espresso.core)
-    kapt("com.google.dagger:hilt-compiler:2.48")
+    kapt("com.google.dagger:hilt-compiler:2.49")
     // Room
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
@@ -76,15 +77,18 @@ dependencies {
     // Jetpack Lifecycle / ViewModel
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
 
     // Compose
+    implementation("androidx.compose.material:material-icons-extended:1.7.0")
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation (libs.androidx.compose.material3)
+
+
 
     // Testing
     testImplementation(libs.junit)

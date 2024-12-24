@@ -12,7 +12,9 @@ import ru.xdd.computer_store.data.repository.StoreRepository
 import javax.inject.Inject
 
 @HiltViewModel
-class RegistrationViewModel @Inject constructor(private val repository: StoreRepository) : ViewModel() {
+class RegistrationViewModel @Inject constructor(
+    private val repository: StoreRepository
+) : ViewModel() {
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
@@ -20,12 +22,12 @@ class RegistrationViewModel @Inject constructor(private val repository: StoreRep
     private val _registrationSuccess = MutableStateFlow(false)
     val registrationSuccess: StateFlow<Boolean> = _registrationSuccess.asStateFlow()
 
-    fun register(username: String, email: String, password: String, role: String) {
+    fun register(username: String, email: String, password: String) {
         viewModelScope.launch {
             try {
                 _errorMessage.value = null
                 val hashedPassword = hashPassword(password)
-                repository.createUser(username, email, hashedPassword, role)
+                repository.createUser(username, email, hashedPassword, role = "USER") // Роль всегда "USER"
                 _registrationSuccess.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Ошибка регистрации: ${e.message}"

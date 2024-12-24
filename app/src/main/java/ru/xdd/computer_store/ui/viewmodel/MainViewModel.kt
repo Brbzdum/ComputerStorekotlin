@@ -38,6 +38,8 @@ class MainViewModel @Inject constructor(private val repository: StoreRepository)
                     product.name.contains(query, ignoreCase = true)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val mainProducts: StateFlow<List<ProductEntity>> = repository.getMainProductsFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query

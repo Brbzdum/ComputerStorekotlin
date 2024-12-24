@@ -3,7 +3,6 @@ package ru.xdd.computer_store.model
 import android.content.Context
 import android.util.Log
 import androidx.room.*
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,9 +20,9 @@ import ru.xdd.computer_store.utils.PasswordHasher
         OrderEntity::class,
         ReviewEntity::class,
         OrderItemEntity::class,
-        ProductAccessoryCrossRef::class // Добавлено
+        ProductAccessoryCrossRef::class
     ],
-    version = 3, // Увеличена версия базы данных
+    version = 4, // Увеличена версия базы данных
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -45,29 +44,11 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "store.db"
                 )
-                    .addMigrations(MIGRATION_2_3) // Добавлена миграция
-                    .addCallback(DatabaseCallback(scope)) // Подключаем Callback
+                    .fallbackToDestructiveMigration() // Разрешить пересоздание базы данных
+                    .addCallback(DatabaseCallback(scope)) // Подключаем Callback для заполнения данных
                     .build()
                 INSTANCE = instance
                 instance
-            }
-        }
-
-        // Миграция с версии 2 на 3
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Создание новой таблицы для связей продуктов и аксессуаров
-                database.execSQL("""
-                    CREATE TABLE IF NOT EXISTS product_accessories (
-                        productId INTEGER NOT NULL,
-                        accessoryId INTEGER NOT NULL,
-                        PRIMARY KEY(productId, accessoryId),
-                        FOREIGN KEY(productId) REFERENCES products(productId) ON DELETE CASCADE,
-                        FOREIGN KEY(accessoryId) REFERENCES products(productId) ON DELETE CASCADE
-                    )
-                """.trimIndent())
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_product_accessories_productId ON product_accessories(productId)")
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_product_accessories_accessoryId ON product_accessories(accessoryId)")
             }
         }
     }
@@ -156,8 +137,8 @@ abstract class AppDatabase : RoomDatabase() {
                 )
 
                 // Добавление аксессуаров к продуктам
-                productDao.addAccessoryToProduct(productId1, productId2) // Добавляем "Мышь Logitech" как аксессуар к "Ноутбуку Lenovo"
-                productDao.addAccessoryToProduct(productId1, productId3) // Добавляем "Монитор Samsung" как аксессуар к "Ноутбуку Lenovo"
+                productDao.addAccessoryToProduct(productId1, productId2)
+                productDao.addAccessoryToProduct(productId1, productId3)
 
                 // Добавление отзывов
                 val user1 = userDao.getUserByUsername("user1")

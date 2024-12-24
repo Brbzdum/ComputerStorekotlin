@@ -182,4 +182,8 @@ class StoreRepository @Inject constructor(
     }
 
     suspend fun getOrderItems(orderId: Long): List<OrderItemEntity> = orderDao.getOrderItems(orderId)
+    suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long): Boolean {
+        return orderDao.hasCompletedOrderForProduct(userId, productId)
+    }
+
 }

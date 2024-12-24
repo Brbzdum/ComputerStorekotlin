@@ -9,6 +9,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ru.xdd.computer_store.model.Role
 import ru.xdd.computer_store.ui.viewmodel.LoginViewModel
 
 @Composable
@@ -19,41 +20,68 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val errorMessage by viewModel.errorMessage.collectAsState(initial = null)
-    val user by viewModel.user.collectAsState(initial = null) // Добавлено для получения пользователя
+    val user by viewModel.user.collectAsState(initial = null)
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Вход", style = MaterialTheme.typography.titleLarge)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Вход",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Имя пользователя") }
+            label = { Text("Имя пользователя") },
+            modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Пароль") },
-            visualTransformation = PasswordVisualTransformation()
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
         )
-
-        Button(onClick = {
-            viewModel.login(username, password)
-        }) {
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { viewModel.login(username, password) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Войти")
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        TextButton(
+            onClick = { navController.navigate("register") }, // Переход на экран регистрации
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Регистрация")
+        }
 
-        errorMessage?.let { Text(it, color = Color.Red) }
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = Color.Red,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
 
-        // Навигация теперь внутри LaunchedEffect, зависящего от user
+        // Навигация при успешном логине
         LaunchedEffect(user) {
-            if (user != null) {
-                if (user!!.role == "admin") {
+            user?.let {
+                if (it.role == Role.ADMIN) {
                     navController.navigate("admin") {
-                        popUpTo("login") { inclusive = true } // Предотвращаем возврат на экран логина
+                        popUpTo("login") { inclusive = true }
                     }
                 } else {
-                    navController.navigate("catalog") {
-                        popUpTo("login") { inclusive = true } // Предотвращаем возврат на экран логина
+                    navController.navigate("main_products") {
+                        popUpTo("login") { inclusive = true }
                     }
                 }
             }
