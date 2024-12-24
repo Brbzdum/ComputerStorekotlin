@@ -1,32 +1,61 @@
 package ru.xdd.computer_store.data.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.Query
-import androidx.room.Update
+import androidx.room.*
 import kotlinx.coroutines.flow.Flow
-import ru.xdd.computer_store.model.ProductEntity
+import ru.xdd.computer_store.model.*
 
 @Dao
 interface ProductDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertProduct(product: ProductEntity): Long
-
-    @Query("SELECT * FROM products")
-    fun getAllProductsFlow(): Flow<List<ProductEntity>> // Изменено
-
-    @Query("SELECT * FROM products WHERE productId = :id LIMIT 1")
-    suspend fun getProductById(id: Long): ProductEntity? // Этот метод оставляем без изменений, так как он используется для получения одного товара по ID
-
-    @Query("SELECT * FROM products WHERE parentProductId IS NULL")
-    fun getMainProductsFlow(): Flow<List<ProductEntity>> // Изменено
-
-    @Query("SELECT * FROM products WHERE parentProductId = :parentId")
-    fun getAccessoriesForProductFlow(parentId: Long): Flow<List<ProductEntity>> // Изменено
-
-    @Query("UPDATE products SET rating = :rating WHERE productId = :productId")
-    suspend fun updateRating(productId: Long, rating: Float)
 
     @Update
     suspend fun updateProduct(product: ProductEntity)
+
+    @Delete
+    suspend fun deleteProduct(product: ProductEntity)
+
+    @Query("SELECT * FROM products")
+    fun getAllProductsFlow(): Flow<List<ProductEntity>>
+
+    @Query("SELECT * FROM products WHERE productId = :productId")
+    suspend fun getProductById(productId: Long): ProductEntity?
+
+    // Получение основных продуктов (без аксессуаров)
+    @Query("SELECT * FROM products WHERE parentProductId IS NULL")
+    fun getMainProductsFlow(): Flow<List<ProductEntity>>
+
+    // Получение аксессуаров для продукта
+    @Query("""
+        SELECT p.*
+        FROM products p
+        INNER JOIN product_accessories pa ON p.productId = pa.accessoryId
+        WHERE pa.productId = :parentId
+    """)
+    fun getAccessoriesForProductFlow(parentId: Long): Flow<List<ProductEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProductAccessoryCrossRef(crossRef: ProductAccessoryCrossRef)
+
+    @Delete
+    suspend fun deleteProductAccessoryCrossRef(crossRef: ProductAccessoryCrossRef)
+
+    @Transaction
+    suspend fun addAccessoryToProduct(productId: Long, accessoryId: Long) {
+        insertProductAccessoryCrossRef(ProductAccessoryCrossRef(productId, accessoryId))
+    }
+
+    @Transaction
+    suspend fun removeAccessoryFromProduct(productId: Long, accessoryId: Long) {
+        deleteProductAccessoryCrossRef(ProductAccessoryCrossRef(productId, accessoryId))
+    }
+
+    // Добавленный метод для обновления рейтинга продукта
+    @Query("UPDATE products SET rating = :rating WHERE productId = :productId")
+    suspend fun updateRating(productId: Long, rating: Float)
+
+    // Метод для получения продукта с аксессуарами
+    @Transaction
+    @Query("SELECT * FROM products WHERE productId = :productId")
+    fun getProductWithAccessoriesFlow(productId: Long): Flow<ProductWithAccessories>
 }

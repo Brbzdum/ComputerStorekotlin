@@ -29,6 +29,5 @@ data class ProductEntity(
     val price: Double,
     val stock: Int,
     val rating: Float = 0.0f,
-    val reviews: List<String> = emptyList(),
     val imageUrl: String = " "
 )

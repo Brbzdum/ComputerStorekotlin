@@ -8,6 +8,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import ru.xdd.computer_store.data.repository.StoreRepository
 import ru.xdd.computer_store.model.AppDatabase
 import ru.xdd.computer_store.data.dao.*
@@ -41,8 +42,6 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideCoroutineScope(): CoroutineScope {
-        return CoroutineScope(Dispatchers.IO)
+        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 }
-
-

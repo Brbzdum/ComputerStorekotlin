@@ -7,6 +7,7 @@ import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import ru.xdd.computer_store.model.OrderEntity
 import ru.xdd.computer_store.model.OrderItemEntity
+import ru.xdd.computer_store.model.OrderStatus
 
 @Dao
 interface OrderDao {
@@ -15,10 +16,11 @@ interface OrderDao {
         SELECT COUNT(*) > 0 
         FROM orders o
         JOIN order_items oi ON o.orderId = oi.orderId
-        WHERE o.userId = :userId AND oi.productId = :productId AND o.orderStatus = 'ЗАВЕРШЁН'
+        WHERE o.userId = :userId AND oi.productId = :productId AND o.orderStatus = :status
         """
     )
-    suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long): Boolean
+    suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long, status: OrderStatus = OrderStatus.ЗАВЕРШЁН): Boolean
+
     @Insert
     suspend fun insertOrder(order: OrderEntity): Long
 
@@ -36,5 +38,5 @@ interface OrderDao {
     }
 
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
-    suspend fun getOrderItems(orderId: Long): List<OrderItemEntity> // Этот метод пока оставляем без изменений, так как он используется только в одном месте, где Flow не требуется
+    suspend fun getOrderItems(orderId: Long): List<OrderItemEntity>
 }
