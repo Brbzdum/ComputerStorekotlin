@@ -16,6 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import ru.xdd.computer_store.model.ProductEntity
 import ru.xdd.computer_store.ui.viewmodel.MainViewModel
@@ -29,7 +30,7 @@ fun MainProductsScreen(navController: NavController, userId: Long, viewModel: Ma
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Компьютерный Магазин") },
+                title = { Text("Компьютерный Магазин", style = MaterialTheme.typography.titleLarge) },
                 actions = {
                     if (userId != -1L) {
                         IconButton(onClick = { navController.navigate("admin_products") }) {
@@ -42,64 +43,84 @@ fun MainProductsScreen(navController: NavController, userId: Long, viewModel: Ma
     ) { paddingValues ->
         LazyColumn(
             contentPadding = paddingValues,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
         ) {
             items(products) { product ->
-                ProductListItem(
+                ProductCard(
                     product = product,
                     onClick = {
                         if (isGuest) {
-                            // Если гость, перенаправляем на экран логина
                             navController.navigate("login")
                         } else {
-                            // Если авторизован, переходим к деталям товара
                             navController.navigate("product_detail/${product.productId}")
                         }
                     },
                     onAddToCart = {
                         if (isGuest) {
-                            // Если гость, перенаправляем на экран логина
                             navController.navigate("login")
                         } else {
-                            // Добавить товар в корзину (здесь можно вызвать соответствующий метод в ViewModel)
                             viewModel.addToCart(userId, product.productId.toInt())
                         }
                     }
                 )
-                Divider()
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
 @Composable
-fun ProductListItem(
+fun ProductCard(
     product: ProductEntity,
     onClick: () -> Unit,
     onAddToCart: () -> Unit
 ) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
-        Image(
-            painter = rememberImagePainter(product.imageUrl),
-            contentDescription = product.name,
+        Row(
             modifier = Modifier
-                .size(80.dp)
-                .clickable { onClick() },
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = product.name, style = MaterialTheme.typography.titleMedium)
-            Text(text = "${product.price} ₽", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Рейтинг: ${product.rating}", style = MaterialTheme.typography.bodySmall)
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Button(onClick = { onAddToCart() }) {
-            Text("В корзину")
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(product.imageUrl),
+                contentDescription = product.name,
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(8.dp),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1
+                )
+                Text(
+                    text = "${product.price} ₽",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Рейтинг: ${product.rating}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Button(onClick = { onAddToCart() }, modifier = Modifier.height(40.dp)) {
+                Text("В корзину")
+            }
         }
     }
 }
+

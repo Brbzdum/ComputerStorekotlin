@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import coil.compose.rememberImagePainter
 import ru.xdd.computer_store.ui.viewmodel.ProductDetailViewModel
 
@@ -30,7 +32,7 @@ fun ProductDetailScreen(productId: Long, navController: NavController, viewModel
                 title = { Text(productWithAccessories?.product?.name ?: "Product Detail") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -44,7 +46,7 @@ fun ProductDetailScreen(productId: Long, navController: NavController, viewModel
                     .padding(16.dp)
             ) {
                 Image(
-                    painter = rememberImagePainter(pwA.product.imageUrl),
+                    painter = rememberAsyncImagePainter(pwA.product.imageUrl),
                     contentDescription = pwA.product.name,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -97,7 +99,7 @@ fun AccessoryItem(accessory: ru.xdd.computer_store.model.ProductEntity, onClick:
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
-            painter = rememberImagePainter(accessory.imageUrl),
+            painter = rememberAsyncImagePainter(accessory.imageUrl),
             contentDescription = accessory.name,
             modifier = Modifier
                 .size(100.dp),

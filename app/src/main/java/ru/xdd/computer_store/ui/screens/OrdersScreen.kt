@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,7 +64,7 @@ fun OrdersScreen(userId: Long, navController: NavController, viewModel: OrdersVi
             ) {
                 items(orders) { order ->
                     OrderItemRow(order = order)
-                    Divider()
+                    HorizontalDivider()
                 }
             }
         }
