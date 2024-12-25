@@ -1,4 +1,3 @@
-// MainProductsScreen.kt
 package ru.xdd.computer_store.ui.screens
 
 import androidx.compose.foundation.Image
@@ -17,15 +16,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import coil.compose.rememberImagePainter
 import ru.xdd.computer_store.model.ProductEntity
 import ru.xdd.computer_store.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainProductsScreen(navController: NavController, userId: Long, viewModel: MainViewModel = hiltViewModel()) {
+fun MainProductsScreen(
+    navController: NavController,
+    userId: Long,
+    viewModel: MainViewModel = hiltViewModel()
+) {
     val products by viewModel.mainProducts.collectAsState()
-    val isGuest = userId == -1L
 
     Scaffold(
         topBar = {
@@ -51,18 +52,10 @@ fun MainProductsScreen(navController: NavController, userId: Long, viewModel: Ma
                 ProductCard(
                     product = product,
                     onClick = {
-                        if (isGuest) {
-                            navController.navigate("login")
-                        } else {
-                            navController.navigate("product_detail/${product.productId}")
-                        }
+                        navController.navigate("product_detail/${product.productId}")
                     },
                     onAddToCart = {
-                        if (isGuest) {
-                            navController.navigate("login")
-                        } else {
-                            viewModel.addToCart(userId, product.productId.toInt())
-                        }
+                        viewModel.addToCart(userId, product.productId.toInt())
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -123,4 +116,3 @@ fun ProductCard(
         }
     }
 }
-

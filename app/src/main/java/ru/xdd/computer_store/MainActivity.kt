@@ -1,4 +1,3 @@
-// MainActivity.kt
 package ru.xdd.computer_store
 
 import android.os.Bundle
@@ -22,12 +21,15 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
 
-                    // Допустим, `userId` получен после авторизации
-                    val userId: Long = getUserIdFromPreferencesOrDefault() // Реализуйте этот метод
+                    // Получаем userId и userRole
+                    val userId = getUserIdFromPreferencesOrDefault()
+                    val userRole = getUserRoleFromPreferencesOrDefault()
 
+                    // Передаем userId и userRole в StoreNavGraph
                     StoreNavGraph(
                         navController = navController,
-                        userId = userId
+                        userId = userId,
+                        userRole = userRole
                     )
                 }
             }
@@ -35,9 +37,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun getUserIdFromPreferencesOrDefault(): Long {
-        // Пример: Получение userId из SharedPreferences
         val sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        return sharedPreferences.getLong("user_id", -1) // -1 как значение по умолчанию
+        return sharedPreferences.getLong("user_id", -1L) // -1L означает гостя
+    }
+
+    private fun getUserRoleFromPreferencesOrDefault(): String {
+        val sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        return sharedPreferences.getString("user_role", "USER") ?: "USER" // "USER" по умолчанию
     }
 }
-
