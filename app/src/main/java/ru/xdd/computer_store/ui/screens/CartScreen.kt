@@ -28,6 +28,7 @@ import java.io.File
 @Composable
 fun CartScreen(userId: Long, navController: NavController, viewModel: CartViewModel = hiltViewModel()) {
     val cartItems by viewModel.getCartItems(userId).collectAsState()
+    val productsMap by viewModel.getProductsMap(userId).collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -37,6 +38,7 @@ fun CartScreen(userId: Long, navController: NavController, viewModel: CartViewMo
         errorMessage?.let {
             coroutineScope.launch {
                 snackbarHostState.showSnackbar(it)
+                viewModel.clearErrorMessage() // Сбрасываем ошибку после показа
             }
         }
     }
@@ -62,24 +64,30 @@ fun CartScreen(userId: Long, navController: NavController, viewModel: CartViewMo
                     modifier = Modifier.weight(1f)
                 ) {
                     items(cartItems) { cartItem ->
-                        val product by viewModel.getProductById(cartItem.productId).collectAsState(initial = null)
+                        val product = productsMap[cartItem.productId]
                         if (product != null) {
-                            CartItemRow(cartItem = cartItem, product = product!!) { // Используем product!!
+                            CartItemRow(cartItem = cartItem, product = product) {
                                 viewModel.removeCartItem(cartItem.cartItemId)
                             }
                         }
-
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
-                        navController.navigate("checkout")
+                        if (cartItems.isNotEmpty()) {
+                            navController.navigate("checkout")
+                        } else {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Корзина пуста. Добавьте товары перед оформлением заказа.")
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Оформить Заказ")
                 }
+
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = { viewModel.clearCart(userId) },
@@ -92,6 +100,8 @@ fun CartScreen(userId: Long, navController: NavController, viewModel: CartViewMo
         }
     }
 }
+
+
 
 @Composable
 fun CartItemRow(

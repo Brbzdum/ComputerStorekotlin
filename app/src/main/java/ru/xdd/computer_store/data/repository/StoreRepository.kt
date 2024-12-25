@@ -15,6 +15,13 @@ class StoreRepository @Inject constructor(
     private val orderDao: OrderDao
 ) {
 
+
+    suspend fun getReviewsByProductId(productId: Long): List<ReviewEntity> {
+        return reviewDao.getReviewsForProductFlow(productId).first()
+    }
+
+
+
     // Пользователи
     suspend fun createUser(username: String, email: String, passwordHash: String, role: String = "USER") {
         try {
@@ -39,8 +46,10 @@ class StoreRepository @Inject constructor(
     }
 
     // Товары
-    suspend fun getProductById(id: Long): ProductEntity? = productDao.getProductById(id)
-        ?: throw IllegalArgumentException("Товар не найден")
+    suspend fun getProductById(productId: Long): ProductEntity? {
+        return productDao.getProductById(productId)
+    }
+
 
     suspend fun insertProduct(product: ProductEntity): Long {
         return productDao.insertProduct(product)

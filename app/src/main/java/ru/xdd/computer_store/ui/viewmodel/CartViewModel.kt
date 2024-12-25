@@ -20,6 +20,17 @@ class CartViewModel @Inject constructor(
         repository.getCartItemsForUserFlow(userId)
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
+    fun getProductsMap(userId: Long): StateFlow<Map<Long, ProductEntity>> =
+        getCartItems(userId).map { items ->
+            items.mapNotNull { item ->
+                repository.getProductById(item.productId)?.let { product ->
+                    item.productId to product
+                }
+            }.toMap()
+        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
+
+
+
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
@@ -43,11 +54,10 @@ class CartViewModel @Inject constructor(
         }
     }
 
-    fun getProductById(productId: Long): Flow<ProductEntity?> {
-        return flow {
-            emit(repository.getProductById(productId))
-        }
+    fun clearErrorMessage() {
+        _errorMessage.value = null
     }
-
 }
+
+
 
