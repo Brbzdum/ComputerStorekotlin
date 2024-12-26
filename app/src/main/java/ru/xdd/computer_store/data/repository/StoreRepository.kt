@@ -1,5 +1,6 @@
 package ru.xdd.computer_store.data.repository
 
+import android.content.SharedPreferences
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -9,6 +10,7 @@ import javax.inject.Inject
 
 
 class StoreRepository @Inject constructor(
+    private val sharedPreferences: SharedPreferences,
     private val userDao: UserDao,
     private val productDao: ProductDao,
     private val reviewDao: ReviewDao,
@@ -49,6 +51,22 @@ class StoreRepository @Inject constructor(
     suspend fun getOrdersByUserId(userId: Long): List<OrderEntity> {
         return orderDao.getOrdersByUserId(userId)
     }
+    fun saveCurrentUser(userId: Long, role: String) {
+        sharedPreferences.edit().apply {
+            putLong("userId", userId)
+            putString("role", role)
+            apply()
+        }
+    }
+
+    // Получение текущего пользователя
+    fun getCurrentUser(): Pair<Long, String?> {
+        val userId = sharedPreferences.getLong("userId", -1L)
+        val role = sharedPreferences.getString("role", null)
+        return userId to role
+    }
+
+    // Удаление данных пользователя (logout)
     fun logout() {
         sharedPreferences.edit().clear().apply()
     }

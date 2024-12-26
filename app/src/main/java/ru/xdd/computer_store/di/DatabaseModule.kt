@@ -1,6 +1,7 @@
 package ru.xdd.computer_store.di
 
 import android.content.Context
+import android.content.SharedPreferences
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -11,7 +12,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import ru.xdd.computer_store.data.repository.StoreRepository
 import ru.xdd.computer_store.model.AppDatabase
-import ru.xdd.computer_store.data.dao.*
 import javax.inject.Singleton
 
 @Module
@@ -29,13 +29,17 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideStoreRepository(db: AppDatabase): StoreRepository {
+    fun provideStoreRepository(
+        db: AppDatabase,
+        sharedPreferences: SharedPreferences // Добавляем SharedPreferences как параметр
+    ): StoreRepository {
         return StoreRepository(
             userDao = db.userDao(),
             productDao = db.productDao(),
             reviewDao = db.reviewDao(),
             cartDao = db.cartDao(),
-            orderDao = db.orderDao()
+            orderDao = db.orderDao(),
+            sharedPreferences = sharedPreferences // Передаем SharedPreferences
         )
     }
 
@@ -45,3 +49,4 @@ object DatabaseModule {
         return CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 }
+

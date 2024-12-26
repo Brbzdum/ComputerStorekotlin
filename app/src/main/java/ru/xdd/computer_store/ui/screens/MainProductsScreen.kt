@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import ru.xdd.computer_store.ui.components.BottomNavigationBar
 import ru.xdd.computer_store.ui.viewmodel.MainViewModel
 
 
@@ -38,16 +39,11 @@ fun MainProductsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Компьютерный Магазин", style = MaterialTheme.typography.titleLarge) },
-                actions = {
-                    // Кнопка для админских функций (доступна только для авторизованных администраторов)
-                    if (userId != -1L) {
-                        IconButton(onClick = { navController.navigate("admin_products") }) {
-                            Icon(Icons.Default.AdminPanelSettings, contentDescription = "Admin")
-                        }
-                    }
-                }
+                title = { Text("Компьютерный Магазин") }
             )
+        },
+        bottomBar = {
+            BottomNavigationBar(navController = navController)
         }
     ) { paddingValues ->
         LazyColumn(
@@ -64,8 +60,7 @@ fun MainProductsScreen(
                     },
                     onAddToCart = {
                         if (userId == -1L) {
-                            // Если пользователь не авторизован, сохраняем возвратный маршрут
-                            navController.navigate("login?redirect=main_products")
+                            navController.navigate("login")
                         } else {
                             viewModel.addToCart(userId, product.productId.toInt())
                         }
@@ -76,6 +71,7 @@ fun MainProductsScreen(
         }
     }
 }
+
 
 
 

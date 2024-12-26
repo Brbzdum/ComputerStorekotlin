@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import ru.xdd.computer_store.R
 import ru.xdd.computer_store.model.CartItemEntity
 import ru.xdd.computer_store.model.ProductEntity
+import ru.xdd.computer_store.ui.components.BottomNavigationBar
 import ru.xdd.computer_store.ui.viewmodel.CartViewModel
 import java.io.File
 
@@ -49,7 +50,8 @@ fun CartScreen(userId: Long, navController: NavController, viewModel: CartViewMo
             TopAppBar(
                 title = { Text("Корзина") }
             )
-        }
+        },
+        bottomBar = { BottomNavigationBar(navController = navController) }
     ) { paddingValues ->
         Column(
             modifier = Modifier
