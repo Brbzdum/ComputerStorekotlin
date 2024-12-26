@@ -7,6 +7,7 @@ import ru.xdd.computer_store.data.dao.*
 import ru.xdd.computer_store.model.*
 import javax.inject.Inject
 
+
 class StoreRepository @Inject constructor(
     private val userDao: UserDao,
     private val productDao: ProductDao,
@@ -40,6 +41,19 @@ class StoreRepository @Inject constructor(
     suspend fun deleteUserById(userId: Long) {
         userDao.deleteUserById(userId)
     }
+    // В StoreRepository
+    suspend fun getUserById(userId: Long): UserEntity? {
+        return userDao.getUserById(userId)
+    }
+
+    suspend fun getOrdersByUserId(userId: Long): List<OrderEntity> {
+        return orderDao.getOrdersByUserId(userId)
+    }
+    fun logout() {
+        sharedPreferences.edit().clear().apply()
+    }
+
+
 
     suspend fun updateUser(user: UserEntity) {
         userDao.updateUser(user)

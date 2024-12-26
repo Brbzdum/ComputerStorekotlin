@@ -19,10 +19,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import ru.xdd.computer_store.ui.viewmodel.MainViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +64,8 @@ fun MainProductsScreen(
                     },
                     onAddToCart = {
                         if (userId == -1L) {
-                            navController.navigate("login")
+                            // Если пользователь не авторизован, сохраняем возвратный маршрут
+                            navController.navigate("login?redirect=main_products")
                         } else {
                             viewModel.addToCart(userId, product.productId.toInt())
                         }
@@ -73,6 +76,7 @@ fun MainProductsScreen(
         }
     }
 }
+
 
 
 //@Composable

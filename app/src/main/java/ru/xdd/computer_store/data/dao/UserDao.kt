@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
+import ru.xdd.computer_store.model.OrderEntity
 import ru.xdd.computer_store.model.UserEntity
 
 @Dao
@@ -23,5 +24,10 @@ interface UserDao {
 
     @Update
     suspend fun updateUser(user: UserEntity)
+    @Query("SELECT * FROM users WHERE userId = :userId")
+    suspend fun getUserById(userId: Long): UserEntity?
+
+
+
 }
 

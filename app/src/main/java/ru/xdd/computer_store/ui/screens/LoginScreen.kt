@@ -15,7 +15,8 @@ import ru.xdd.computer_store.ui.viewmodel.LoginViewModel
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: LoginViewModel =  hiltViewModel()
+    viewModel: LoginViewModel = hiltViewModel(),
+    redirect: String? = null // Новый параметр
 ) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -57,7 +58,7 @@ fun LoginScreen(
         }
         Spacer(modifier = Modifier.height(8.dp))
         TextButton(
-            onClick = { navController.navigate("register") }, // Переход на экран регистрации
+            onClick = { navController.navigate("register?redirect=$redirect") },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Регистрация")
@@ -75,8 +76,8 @@ fun LoginScreen(
         // Навигация при успешном логине
         LaunchedEffect(user) {
             user?.let {
-                if (it.role == Role.ADMIN) {
-                    navController.navigate("admin") {
+                if (redirect != null) {
+                    navController.navigate(redirect) {
                         popUpTo("login") { inclusive = true }
                     }
                 } else {
@@ -88,3 +89,5 @@ fun LoginScreen(
         }
     }
 }
+
+

@@ -5,7 +5,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import ru.xdd.computer_store.ui.screens.*
-import ru.xdd.computer_store.ui.utils.AuthRequiredComposable
 
 @Composable
 fun StoreNavGraph(
@@ -37,60 +36,49 @@ fun StoreNavGraph(
             }
         }
 
-        composable("checkout") {
-            OrdersScreen(navController = navController, userId = userId)
+        // Корзина доступна всем пользователям
+        composable("cart") {
+            CartScreen(userId = userId, navController = navController)
         }
 
-
-        // Корзина (только для авторизованных пользователей)
-        composable("cart") {
-            AuthRequiredComposable(userId = userId, navController = navController) {
-                CartScreen(
-                    userId = userId,
-                    navController = navController
+        // Оформление заказа
+        composable("checkout") {
+            if (userId == -1L) {
+                // Если пользователь не авторизован, перенаправляем на экран логина с возвратом
+                navController.navigate("login?redirect=checkout")
+            } else {
+                OrdersScreen(
+                    navController = navController,
+                    userId = userId
                 )
             }
         }
 
+
         // Страница авторизации
-        composable("login") {
-            LoginScreen(navController = navController)
+        composable("login?redirect={redirect}") { backStackEntry ->
+            val redirect = backStackEntry.arguments?.getString("redirect")
+            LoginScreen(navController = navController, redirect = redirect)
         }
 
-        // Страница регистрации
-        composable("register") {
-            RegistrationScreen(navController = navController)
-        }
 
-        // Управление пользователями (админ)
-//        composable("admin_users") {
-//            if (userRole == "ADMIN") {
-//                AuthRequiredComposable(userId = userId, navController = navController) {
-//                    AdminUserScreen(navController = navController)
-//                }
-//            } else {
-//                navController.navigate("main_products") {
-//                    popUpTo("main_products") { inclusive = true }
-//                }
-//            }
-//        }
-
-        // Управление товарами (админ)
-        composable("admin_products") {
-            if (userRole == "ADMIN") {
-                AuthRequiredComposable(userId = userId, navController = navController) {
-                    AdminProductScreen(navController = navController)
+        // Страница регистрации с возвратом
+        composable("register?redirect={redirect}") { backStackEntry ->
+            val redirect = backStackEntry.arguments?.getString("redirect")
+            RegistrationScreen(
+                navController = navController,
+                onRegistrationSuccess = {
+                    if (redirect != null) {
+                        navController.navigate(redirect) {
+                            popUpTo("register") { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate("main_products") {
+                            popUpTo("register") { inclusive = true }
+                        }
+                    }
                 }
-            } else {
-                navController.navigate("main_products") {
-                    popUpTo("main_products") { inclusive = true }
-                }
-            }
+            )
         }
-
-//        // Экран аксессуаров
-//        composable("accessories") {
-//            AccessoriesScreen(navController = navController)
-//        }
     }
 }

@@ -39,4 +39,7 @@ interface OrderDao {
 
     @Query("SELECT * FROM order_items WHERE orderId = :orderId")
     suspend fun getOrderItems(orderId: Long): List<OrderItemEntity>
+
+    @Query("SELECT * FROM orders WHERE userId = :userId")
+    suspend fun getOrdersByUserId(userId: Long): List<OrderEntity>
 }
