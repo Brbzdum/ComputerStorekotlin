@@ -19,6 +19,16 @@ class StoreRepository @Inject constructor(
     private val orderDao: OrderDao
 ) {
 
+    // В StoreRepository
+    suspend fun updateOrderStatus(orderId: Long, newStatus: OrderStatus) {
+        val order = orderDao.getOrderById(orderId)
+        if (order != null) {
+            val updatedOrder = order.copy(orderStatus = newStatus)
+            orderDao.updateOrder(updatedOrder)
+        } else {
+            throw IllegalArgumentException("Заказ с ID $orderId не найден.")
+        }
+    }
 
     suspend fun getReviewsByProductId(productId: Long): List<ReviewEntity> {
         return reviewDao.getReviewsForProductFlow(productId).first()

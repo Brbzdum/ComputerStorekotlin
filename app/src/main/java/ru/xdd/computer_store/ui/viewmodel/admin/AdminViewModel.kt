@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.xdd.computer_store.data.repository.StoreRepository
+import ru.xdd.computer_store.model.OrderEntity
+import ru.xdd.computer_store.model.OrderStatus
 import ru.xdd.computer_store.model.ProductEntity
 import ru.xdd.computer_store.model.ReviewEntity
 import ru.xdd.computer_store.model.UserEntity
@@ -31,6 +33,9 @@ class AdminViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _orders = MutableStateFlow<List<OrderEntity>>(emptyList())
+    val orders: StateFlow<List<OrderEntity>> = _orders.asStateFlow()
+
     private fun setError(message: String) {
         _errorMessage.value = message
     }
@@ -45,6 +50,28 @@ class AdminViewModel @Inject constructor(
                 repository.deleteReview(reviewId)
             } catch (e: Exception) {
                 setError("Ошибка удаления отзыва: ${e.message}")
+            }
+        }
+    }
+    fun loadAllOrders() {
+        viewModelScope.launch {
+            try {
+                repository.getAllOrdersFlowHashe().collect {
+                    _orders.value = it
+                }
+            } catch (e: Exception) {
+                setError("Ошибка загрузки заказов: ${e.message}")
+            }
+        }
+    }
+
+    fun updateOrderStatus(orderId: Long, newStatus: OrderStatus) {
+        viewModelScope.launch {
+            try {
+                repository.updateOrderStatus(orderId, newStatus)
+                loadAllOrders() // Перезагружаем заказы после изменения
+            } catch (e: Exception) {
+                setError("Ошибка обновления статуса заказа: ${e.message}")
             }
         }
     }

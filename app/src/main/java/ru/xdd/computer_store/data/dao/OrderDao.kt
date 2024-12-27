@@ -21,6 +21,21 @@ interface OrderDao {
     )
     suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long, status: OrderStatus = OrderStatus.ЗАВЕРШЁН): Boolean
 
+    @Query("SELECT * FROM orders WHERE orderId = :orderId LIMIT 1")
+    suspend fun getOrderById(orderId: Long): OrderEntity?
+
+    @Query("SELECT * FROM orders")
+    fun getAllOrdersFlow(): Flow<List<OrderEntity>>
+
+
+    @Query("UPDATE orders SET orderStatus = :newStatus WHERE orderId = :orderId")
+    suspend fun updateOrderStatus(orderId: Long, newStatus: OrderStatus)
+
+    @Query("DELETE FROM orders WHERE orderId = :orderId")
+    suspend fun deleteOrder(orderId: Long)
+
+
+
     @Insert
     suspend fun insertOrder(order: OrderEntity): Long
 
@@ -42,4 +57,5 @@ interface OrderDao {
 
     @Query("SELECT * FROM orders WHERE userId = :userId")
     suspend fun getOrdersByUserId(userId: Long): List<OrderEntity>
+
 }
