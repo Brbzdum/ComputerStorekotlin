@@ -1,4 +1,3 @@
-// AdminProductScreen.kt
 package ru.xdd.computer_store.ui.screens.admin
 
 import androidx.compose.foundation.layout.*
@@ -15,46 +14,64 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import ru.xdd.computer_store.model.ProductEntity
 import ru.xdd.computer_store.ui.viewmodel.admin.AdminViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminProductScreen(viewModel: AdminViewModel = hiltViewModel(), navController: NavController) {
+fun AdminProductScreen(
+    viewModel: AdminViewModel = hiltViewModel(),
+    navController: NavController
+) {
     val products by viewModel.products.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Показываем Snackbar для ошибок
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(it)
+                viewModel.resetError() // Сбрасываем ошибку
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Управление Продуктами") }
+                title = { Text("Управление продуктами") }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { navController.navigate("addProduct") }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Product")
+                Icon(Icons.Default.Add, contentDescription = "Добавить продукт")
             }
         }
     ) { paddingValues ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)
-            .padding(16.dp)) {
-            if (errorMessage != null) {
-                Text(text = errorMessage ?: "", color = MaterialTheme.colorScheme.error)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp)
+        ) {
             LazyColumn(
                 modifier = Modifier.weight(1f)
             ) {
                 items(products) { product ->
-                    AdminProductListItem(product = product, onEdit = {
-                        navController.navigate("editProduct/${product.productId}")
-                    }, onDelete = {
-                        viewModel.deleteProduct(product)
-                    })
-                    HorizontalDivider()
+                    AdminProductListItem(
+                        product = product,
+                        onEdit = {
+                            navController.navigate("editProduct/${product.productId}")
+                        },
+                        onDelete = {
+                            viewModel.deleteProduct(product.productId)
+                        }
+                    )
                 }
             }
         }
@@ -62,19 +79,32 @@ fun AdminProductScreen(viewModel: AdminViewModel = hiltViewModel(), navControlle
 }
 
 @Composable
-fun AdminProductListItem(product: ProductEntity, onEdit: () -> Unit, onDelete: () -> Unit) {
+fun AdminProductListItem(
+    product: ProductEntity,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = product.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-        IconButton(onClick = { onEdit() }) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit Product")
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = product.name,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = "Цена: ${product.price} ₽",
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
-        IconButton(onClick = { onDelete() }) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete Product")
+        IconButton(onClick = onEdit) {
+            Icon(Icons.Default.Edit, contentDescription = "Редактировать продукт")
+        }
+        IconButton(onClick = onDelete) {
+            Icon(Icons.Default.Delete, contentDescription = "Удалить продукт")
         }
     }
 }

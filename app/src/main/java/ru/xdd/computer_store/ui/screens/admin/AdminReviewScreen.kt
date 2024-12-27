@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -17,6 +18,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -37,11 +39,12 @@ fun AdminReviewScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    // Показываем Snackbar для отображения ошибок
     LaunchedEffect(errorMessage) {
-        errorMessage?.let {
+        errorMessage?.let { message ->
             coroutineScope.launch {
-                snackbarHostState.showSnackbar(it)
-                viewModel.resetError()
+                snackbarHostState.showSnackbar(message)
+                viewModel.resetError() // Сбрасываем ошибку после показа
             }
         }
     }
@@ -54,7 +57,9 @@ fun AdminReviewScreen(
     ) { padding ->
         LazyColumn(
             contentPadding = padding,
-            modifier = Modifier.fillMaxSize().padding(16.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
             items(reviews) { review ->
                 ReviewRow(review, onDelete = { viewModel.deleteReview(review.reviewId) })
@@ -66,7 +71,9 @@ fun AdminReviewScreen(
 @Composable
 fun ReviewRow(review: ReviewEntity, onDelete: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column {

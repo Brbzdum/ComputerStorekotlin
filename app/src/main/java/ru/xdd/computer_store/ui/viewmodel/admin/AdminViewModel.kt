@@ -1,4 +1,3 @@
-// AdminViewModel.kt
 package ru.xdd.computer_store.ui.viewmodel.admin
 
 import androidx.lifecycle.ViewModel
@@ -29,72 +28,128 @@ class AdminViewModel @Inject constructor(
     private val _selectedProductAccessories = MutableStateFlow<List<ProductEntity>>(emptyList())
     val selectedProductAccessories: StateFlow<List<ProductEntity>> = _selectedProductAccessories
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private fun setError(message: String) {
+        _errorMessage.value = message
+    }
+
+    fun resetError() {
+        _errorMessage.value = null
+    }
 
     fun deleteReview(reviewId: Long) {
         viewModelScope.launch {
-            repository.deleteReview(reviewId)
+            try {
+                repository.deleteReview(reviewId)
+            } catch (e: Exception) {
+                setError("Ошибка удаления отзыва: ${e.message}")
+            }
         }
     }
 
     fun addUser(user: UserEntity) {
         viewModelScope.launch {
-            repository.createUser(user.username, user.email, user.passwordHash, user.role.name)
+            try {
+                if (user.username.isBlank() || user.email.isBlank() || user.passwordHash.isBlank()) {
+                    setError("Все поля пользователя обязательны для заполнения.")
+                    return@launch
+                }
+                repository.createUser(user.username, user.email, user.passwordHash, user.role.name)
+            } catch (e: Exception) {
+                setError("Ошибка добавления пользователя: ${e.message}")
+            }
         }
     }
 
     fun updateUser(user: UserEntity) {
         viewModelScope.launch {
-            repository.updateUser(user)
+            try {
+                repository.updateUser(user)
+            } catch (e: Exception) {
+                setError("Ошибка обновления пользователя: ${e.message}")
+            }
         }
     }
 
     fun deleteUser(userId: Long) {
         viewModelScope.launch {
-            repository.deleteUserById(userId)
+            try {
+                repository.deleteUserById(userId)
+            } catch (e: Exception) {
+                setError("Ошибка удаления пользователя: ${e.message}")
+            }
         }
     }
 
     fun addProduct(product: ProductEntity) {
         viewModelScope.launch {
-            repository.insertProduct(product)
+            try {
+                if (product.name.isBlank() || product.category.isBlank() || product.price <= 0) {
+                    setError("Некорректные данные продукта.")
+                    return@launch
+                }
+                repository.insertProduct(product)
+            } catch (e: Exception) {
+                setError("Ошибка добавления продукта: ${e.message}")
+            }
         }
     }
 
     fun updateProduct(product: ProductEntity) {
         viewModelScope.launch {
-            repository.updateProduct(product)
+            try {
+                repository.updateProduct(product)
+            } catch (e: Exception) {
+                setError("Ошибка обновления продукта: ${e.message}")
+            }
         }
     }
 
     fun deleteProduct(productId: Long) {
         viewModelScope.launch {
-            val product = repository.getProductByIdBlocking(productId)
-            if (product != null) repository.deleteProduct(product)
+            try {
+                val product = repository.getProductByIdBlocking(productId)
+                if (product != null) repository.deleteProduct(product)
+                else setError("Продукт с ID $productId не найден.")
+            } catch (e: Exception) {
+                setError("Ошибка удаления продукта: ${e.message}")
+            }
         }
     }
+
     fun loadAccessoriesForProduct(productId: Long) {
         viewModelScope.launch {
-            repository.getAccessoriesForProductFlow(productId).collect {
-                _selectedProductAccessories.value = it
+            try {
+                repository.getAccessoriesForProductFlow(productId).collect {
+                    _selectedProductAccessories.value = it
+                }
+            } catch (e: Exception) {
+                setError("Ошибка загрузки аксессуаров: ${e.message}")
             }
         }
     }
 
     fun addAccessory(productId: Long, accessoryId: Long) {
         viewModelScope.launch {
-            repository.addAccessoryToProduct(productId, accessoryId)
-            loadAccessoriesForProduct(productId) // Обновляем список аксессуаров
+            try {
+                repository.addAccessoryToProduct(productId, accessoryId)
+                loadAccessoriesForProduct(productId) // Обновляем список аксессуаров
+            } catch (e: Exception) {
+                setError("Ошибка добавления аксессуара: ${e.message}")
+            }
         }
     }
 
     fun removeAccessory(productId: Long, accessoryId: Long) {
         viewModelScope.launch {
-            repository.removeAccessoryFromProduct(productId, accessoryId)
-            loadAccessoriesForProduct(productId) // Обновляем список аксессуаров
+            try {
+                repository.removeAccessoryFromProduct(productId, accessoryId)
+                loadAccessoriesForProduct(productId) // Обновляем список аксессуаров
+            } catch (e: Exception) {
+                setError("Ошибка удаления аксессуара: ${e.message}")
+            }
         }
     }
 }
-}
-
-
