@@ -21,6 +21,7 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE productId = :productId")
     suspend fun getProductById(productId: Long): ProductEntity?
 
+
     // Получение основных продуктов (без аксессуаров)
     @Query("SELECT * FROM products WHERE parentProductId IS NULL")
     fun getMainProductsFlow(): Flow<List<ProductEntity>>

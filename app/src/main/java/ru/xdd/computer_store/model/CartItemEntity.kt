@@ -29,4 +29,4 @@ data class CartItemEntity(
     val productId: Long,
     val quantity: Int,
 
-)
+    )

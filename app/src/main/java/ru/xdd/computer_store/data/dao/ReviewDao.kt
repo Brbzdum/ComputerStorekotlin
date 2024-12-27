@@ -1,6 +1,7 @@
 package ru.xdd.computer_store.data.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
@@ -15,8 +16,11 @@ interface ReviewDao {
     @Query("SELECT * FROM reviews WHERE productId = :productId")
     fun getReviewsForProductFlow(productId: Long): Flow<List<ReviewEntity>> // Изменено
 
-    @Query("DELETE FROM reviews WHERE reviewId = :reviewId")
+    @Delete
     suspend fun deleteReview(reviewId: Long)
+
+    @Query("SELECT * FROM reviews")
+    fun getAllReviewsFlow(): Flow<List<ReviewEntity>>
 
 }
 

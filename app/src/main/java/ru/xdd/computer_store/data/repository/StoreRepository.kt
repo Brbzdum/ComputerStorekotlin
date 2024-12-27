@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import ru.xdd.computer_store.data.dao.*
 import ru.xdd.computer_store.model.*
 import javax.inject.Inject
@@ -27,13 +28,23 @@ class StoreRepository @Inject constructor(
 
     // Пользователи
     suspend fun createUser(username: String, email: String, passwordHash: String, role: String = "USER") {
+        val userRole = Role.entries.find { it.name == role.uppercase() }
+            ?: throw IllegalArgumentException("Недопустимая роль: $role. Разрешенные роли: ${Role.entries.joinToString()}")
+
         try {
-            val userRole = Role.valueOf(role.uppercase())
-            userDao.insertUser(UserEntity(username = username, email = email, passwordHash = passwordHash, role = userRole))
-        } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("Неверная роль: $role")
+            userDao.insertUser(
+                UserEntity(
+                    username = username,
+                    email = email,
+                    passwordHash = passwordHash,
+                    role = userRole
+                )
+            )
+        } catch (e: android.database.sqlite.SQLiteConstraintException) {
+            throw IllegalArgumentException("Пользователь с таким именем или email уже существует")
         }
     }
+
 
     suspend fun getUserByUsername(username: String): UserEntity? {
         return userDao.getUserByUsername(username)
@@ -71,16 +82,16 @@ class StoreRepository @Inject constructor(
         sharedPreferences.edit().clear().apply()
     }
 
+    fun getProductByIdBlocking(productId: Long): ProductEntity? = runBlocking {
+        productDao.getProductById(productId)
+    }
 
 
     suspend fun updateUser(user: UserEntity) {
         userDao.updateUser(user)
     }
 
-    // Товары
-    suspend fun getProductById(productId: Long): ProductEntity? {
-        return productDao.getProductById(productId)
-    }
+
 
 
     suspend fun insertProduct(product: ProductEntity): Long {
@@ -128,6 +139,8 @@ class StoreRepository @Inject constructor(
         reviewDao.insertReview(review)
         updateProductRating(productId) // Обновляем рейтинг после добавления отзыва
     }
+    fun getAllReviewsFlow(): Flow<List<ReviewEntity>> = reviewDao.getAllReviewsFlow()
+
 
     private suspend fun updateProductRating(productId: Long) {
         val reviews = reviewDao.getReviewsForProductFlow(productId).first()
@@ -146,7 +159,7 @@ class StoreRepository @Inject constructor(
         if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара на складе")
 
         val existingCartItems = cartDao.getCartItemsForUserFlow(userId).first()
-        val existingCartItem = existingCartItems.find { it.productId == productId }
+        val existingCartItem = existingCartItems.find { it.productId.toLong() == productId }
 
         if (existingCartItem != null) {
             val updatedQuantity = existingCartItem.quantity + quantity

@@ -44,17 +44,15 @@ fun StoreNavGraph(
         // Профиль (только для авторизованных пользователей)
         composable("profile") {
             if (userId == -1L) {
-                // Если пользователь не авторизован, перенаправляем на экран логина
                 navController.navigate("login?redirect=profile")
             } else {
                 ProfileScreen(navController = navController)
             }
         }
 
-        // Оформление заказа
+        // Оформление заказа (только для авторизованных)
         composable("checkout") {
             if (userId == -1L) {
-                // Если пользователь не авторизован, перенаправляем на экран логина с возвратом
                 navController.navigate("login?redirect=checkout")
             } else {
                 OrdersScreen(
@@ -64,13 +62,13 @@ fun StoreNavGraph(
             }
         }
 
-        // Страница авторизации
+        // Авторизация
         composable("login?redirect={redirect}") { backStackEntry ->
             val redirect = backStackEntry.arguments?.getString("redirect")
             LoginScreen(navController = navController, redirect = redirect)
         }
 
-        // Страница регистрации с возвратом
+        // Регистрация
         composable("register?redirect={redirect}") { backStackEntry ->
             val redirect = backStackEntry.arguments?.getString("redirect")
             RegistrationScreen(
@@ -90,3 +88,4 @@ fun StoreNavGraph(
         }
     }
 }
+

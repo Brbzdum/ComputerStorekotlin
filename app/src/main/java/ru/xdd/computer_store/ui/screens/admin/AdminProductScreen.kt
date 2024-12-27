@@ -1,5 +1,5 @@
 // AdminProductScreen.kt
-package ru.xdd.computer_store.ui.screens
+package ru.xdd.computer_store.ui.screens.admin
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import ru.xdd.computer_store.model.ProductEntity
-import ru.xdd.computer_store.ui.viewmodel.AdminViewModel
+import ru.xdd.computer_store.ui.viewmodel.admin.AdminViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +54,7 @@ fun AdminProductScreen(viewModel: AdminViewModel = hiltViewModel(), navControlle
                     }, onDelete = {
                         viewModel.deleteProduct(product)
                     })
-                    Divider()
+                    HorizontalDivider()
                 }
             }
         }

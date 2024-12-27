@@ -23,11 +23,13 @@ import ru.xdd.computer_store.utils.Converters
 data class ProductEntity(
     @PrimaryKey(autoGenerate = true) val productId: Long = 0,
     val parentProductId: Long? = null,
-    val name: String,
-    val description: String,
-    val category: String,
-    val price: Double,
-    val stock: Int,
+    val name: String = "Unknown",
+    val description: String = "",
+    val category: String = "Unknown",
+    val price: Double = 0.0,
+    val stock: Int = 0,
     val rating: Float = 0.0f,
-    val imageUrl: String = " "
+    val imageUrl: String = ""
 )
+
+

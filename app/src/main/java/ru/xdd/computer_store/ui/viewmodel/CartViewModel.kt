@@ -21,13 +21,15 @@ class CartViewModel @Inject constructor(
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun getProductsMap(userId: Long): StateFlow<Map<Long, ProductEntity>> =
-        getCartItems(userId).map { items ->
-            items.mapNotNull { item ->
-                repository.getProductById(item.productId)?.let { product ->
-                    item.productId to product
+        repository.getCartItemsForUserFlow(userId)
+            .map { items ->
+                items.associate { item ->
+                    item.productId to (repository.getProductByIdBlocking(item.productId) ?: ProductEntity())
                 }
-            }.toMap()
-        }.stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
+            }
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
+
+
 
 
 

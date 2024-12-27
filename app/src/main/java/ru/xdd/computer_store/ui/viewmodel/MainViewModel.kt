@@ -1,5 +1,6 @@
 package ru.xdd.computer_store.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,25 +62,22 @@ class MainViewModel @Inject constructor(private val repository: StoreRepository)
 
     val totalAmount = cartItems.map { items ->
         items.sumOf { cartItem ->
-            val product = products.value.find { it.productId == cartItem.productId }
+            val product = products.value.find { it.productId == cartItem.productId.toLong() }
             (product?.price ?: 0.0) * cartItem.quantity
         }
     }
 
 
-    fun addToCart(productId: Long, quantity: Int = 1) {
-        _cartIsLoading.value = true
+    fun addToCart(userId: Long, productId: Long, quantity: Int = 1) {
         viewModelScope.launch {
             try {
-                repository.addToCart(1, productId, quantity) // userId = 1
-                refreshCart()
-                _cartIsLoading.value = false
+                repository.addToCart(userId, productId, quantity)
             } catch (e: Exception) {
-                _cartErrorMessage.value = "Ошибка добавления в корзину: ${e.message}"
-                _cartIsLoading.value = false
+                Log.e("MainViewModel", "Error adding to cart: ${e.message}")
             }
         }
     }
+
 
     fun removeFromCart(cartItemId: Long) {
         _cartIsLoading.value = true
