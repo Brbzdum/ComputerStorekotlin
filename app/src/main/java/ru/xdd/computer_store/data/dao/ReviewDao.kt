@@ -16,7 +16,7 @@ interface ReviewDao {
     @Query("SELECT * FROM reviews WHERE productId = :productId")
     fun getReviewsForProductFlow(productId: Long): Flow<List<ReviewEntity>> // Изменено
 
-    @Delete
+    @Query("DELETE FROM reviews WHERE reviewId = :reviewId")
     suspend fun deleteReview(reviewId: Long)
 
     @Query("SELECT * FROM reviews")

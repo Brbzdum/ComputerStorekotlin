@@ -23,12 +23,12 @@ class StoreRepository @Inject constructor(
     suspend fun updateOrderStatus(orderId: Long, newStatus: OrderStatus) {
         val order = orderDao.getOrderById(orderId)
         if (order != null) {
-            val updatedOrder = order.copy(orderStatus = newStatus)
-            orderDao.updateOrder(updatedOrder)
+            orderDao.updateOrderStatus(orderId, newStatus) // Вызываем метод updateOrderStatus
         } else {
             throw IllegalArgumentException("Заказ с ID $orderId не найден.")
         }
     }
+
 
     suspend fun getReviewsByProductId(productId: Long): List<ReviewEntity> {
         return reviewDao.getReviewsForProductFlow(productId).first()
@@ -114,6 +114,9 @@ class StoreRepository @Inject constructor(
 
     suspend fun deleteProduct(product: ProductEntity) {
         productDao.deleteProduct(product)
+    }
+    fun getAllOrdersFlow(): Flow<List<OrderEntity>> {
+        return orderDao.getAllOrdersFlow()
     }
 
     // Управление аксессуарами

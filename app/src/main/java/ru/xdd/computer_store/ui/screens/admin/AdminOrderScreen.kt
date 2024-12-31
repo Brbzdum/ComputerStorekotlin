@@ -72,7 +72,7 @@ fun AdminOrderScreen(
                                 navController.navigate("orderDetails/${order.orderId}")
                             }
                         )
-                        Divider()
+                        HorizontalDivider()
                     }
                 }
             }

@@ -56,7 +56,7 @@ class AdminViewModel @Inject constructor(
     fun loadAllOrders() {
         viewModelScope.launch {
             try {
-                repository.getAllOrdersFlowHashe().collect {
+                repository.getAllOrdersFlow().collect {
                     _orders.value = it
                 }
             } catch (e: Exception) {
@@ -64,6 +64,7 @@ class AdminViewModel @Inject constructor(
             }
         }
     }
+
 
     fun updateOrderStatus(orderId: Long, newStatus: OrderStatus) {
         viewModelScope.launch {

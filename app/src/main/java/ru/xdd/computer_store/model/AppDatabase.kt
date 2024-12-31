@@ -110,7 +110,8 @@ abstract class AppDatabase : RoomDatabase() {
                         price = 55000.0,
                         stock = 10,
                         rating = 4.5f,
-                        imageUrl = "https://p3-ofp.static.pub//fes/cms/2024/07/17/mhhtt47y7i849yv9ocqq4lwr6ly3h8024182.png"
+                        imageUrl = "https://p3-ofp.static.pub//fes/cms/2024/07/17/mhhtt47y7i849yv9ocqq4lwr6ly3h8024182.png",
+                        parentProductId = null
                     )
                 )
                 val productId2 = productDao.insertProduct(
@@ -121,7 +122,8 @@ abstract class AppDatabase : RoomDatabase() {
                         price = 1500.0,
                         stock = 50,
                         rating = 4.8f,
-                        imageUrl = "https://ir.ozone.ru/s3/multimedia-0/c1000/6350655876.jpg"
+                        imageUrl = "https://ir.ozone.ru/s3/multimedia-0/c1000/6350655876.jpg",
+                        parentProductId = null
                     )
                 )
                 val productId3 = productDao.insertProduct(
@@ -132,7 +134,8 @@ abstract class AppDatabase : RoomDatabase() {
                         price = 12000.0,
                         stock = 20,
                         rating = 4.7f,
-                        imageUrl = "https://3logic.ru/pimg/pim/regular/1428262.jpg"
+                        imageUrl = "https://3logic.ru/pimg/pim/regular/1428262.jpg",
+                        parentProductId = null
                     )
                 )
 

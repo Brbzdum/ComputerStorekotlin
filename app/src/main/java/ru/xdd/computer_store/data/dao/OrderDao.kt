@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import ru.xdd.computer_store.model.OrderEntity
 import ru.xdd.computer_store.model.OrderItemEntity
@@ -19,7 +20,11 @@ interface OrderDao {
         WHERE o.userId = :userId AND oi.productId = :productId AND o.orderStatus = :status
         """
     )
-    suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long, status: OrderStatus = OrderStatus.ЗАВЕРШЁН): Boolean
+    suspend fun hasCompletedOrderForProduct(
+        userId: Long,
+        productId: Long,
+        status: OrderStatus = OrderStatus.ЗАВЕРШЁН
+    ): Boolean
 
     @Query("SELECT * FROM orders WHERE orderId = :orderId LIMIT 1")
     suspend fun getOrderById(orderId: Long): OrderEntity?
@@ -27,14 +32,11 @@ interface OrderDao {
     @Query("SELECT * FROM orders")
     fun getAllOrdersFlow(): Flow<List<OrderEntity>>
 
-
     @Query("UPDATE orders SET orderStatus = :newStatus WHERE orderId = :orderId")
     suspend fun updateOrderStatus(orderId: Long, newStatus: OrderStatus)
 
     @Query("DELETE FROM orders WHERE orderId = :orderId")
     suspend fun deleteOrder(orderId: Long)
-
-
 
     @Insert
     suspend fun insertOrder(order: OrderEntity): Long
@@ -43,7 +45,7 @@ interface OrderDao {
     suspend fun insertOrderItems(orderItems: List<OrderItemEntity>)
 
     @Query("SELECT * FROM orders WHERE userId = :userId")
-    fun getOrdersForUserFlow(userId: Long): Flow<List<OrderEntity>> // Изменено
+    fun getOrdersForUserFlow(userId: Long): Flow<List<OrderEntity>>
 
     @Transaction
     suspend fun placeOrderWithItems(order: OrderEntity, items: List<OrderItemEntity>) {
@@ -57,5 +59,4 @@ interface OrderDao {
 
     @Query("SELECT * FROM orders WHERE userId = :userId")
     suspend fun getOrdersByUserId(userId: Long): List<OrderEntity>
-
 }
