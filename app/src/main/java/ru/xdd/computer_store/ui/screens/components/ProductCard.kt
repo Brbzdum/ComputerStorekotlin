@@ -18,8 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import ru.xdd.computer_store.R
 import ru.xdd.computer_store.model.ProductEntity
 
 @Composable
@@ -42,13 +44,17 @@ fun ProductCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = rememberAsyncImagePainter(product.imageUrl),
+                painter = rememberAsyncImagePainter(
+                    model = if (product.imageUrl.isNotBlank()) product.imageUrl else R.drawable.placeholder,
+                    error = painterResource(id = R.drawable.error_image)
+                ),
                 contentDescription = product.name,
                 modifier = Modifier
                     .size(80.dp)
                     .padding(8.dp),
                 contentScale = ContentScale.Crop
             )
+
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(

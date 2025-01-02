@@ -252,5 +252,32 @@ class StoreRepository @Inject constructor(
     suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long): Boolean {
         return orderDao.hasCompletedOrderForProduct(userId, productId)
     }
+    /**
+     * Поиск продуктов по названию.
+     * @param query Часть названия продукта для поиска.
+     * @return Поток списка продуктов, соответствующих запросу.
+     */
+    fun searchProductsByName(query: String): Flow<List<ProductEntity>> {
+        return productDao.searchProductsByName(query)
+    }
+
+    /**
+     * Фильтрация продуктов по категории.
+     * @param category Название категории.
+     * @return Поток списка продуктов в заданной категории.
+     */
+    fun filterProductsByCategory(category: String): Flow<List<ProductEntity>> {
+        return productDao.filterProductsByCategory(category)
+    }
+
+    /**
+     * Фильтрация продуктов по диапазону цен.
+     * @param minPrice Минимальная цена.
+     * @param maxPrice Максимальная цена.
+     * @return Поток списка продуктов в заданном ценовом диапазоне.
+     */
+    fun filterProductsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<ProductEntity>> {
+        return productDao.filterProductsByPriceRange(minPrice, maxPrice)
+    }
 
 }
