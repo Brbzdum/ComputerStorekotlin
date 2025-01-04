@@ -13,11 +13,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(private val repository: StoreRepository) : ViewModel() {
 
-    // Global state
-    private val _isLoggedIn = MutableStateFlow(false)
-    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
-
-    // Product list as a Flow
+    // Products
     private val _products = repository.getAllProductsFlow().stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5000),
@@ -39,8 +35,6 @@ class MainViewModel @Inject constructor(private val repository: StoreRepository)
                     product.name.contains(query, ignoreCase = true)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    val mainProducts: StateFlow<List<ProductEntity>> = repository.getMainProductsFlow()
-        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
@@ -50,65 +44,48 @@ class MainViewModel @Inject constructor(private val repository: StoreRepository)
         _selectedCategory.value = category
     }
 
-    // Cart state
-    private val _cartItems = MutableStateFlow<List<CartItemEntity>>(emptyList())
+    // Cart
+    private val _cartItems = repository.getCartItemsForUserFlow(1L).stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
     val cartItems: StateFlow<List<CartItemEntity>> = _cartItems
-
-    private val _cartIsLoading = MutableStateFlow(false)
-    val cartIsLoading: StateFlow<Boolean> = _cartIsLoading
-
-    private val _cartErrorMessage = MutableStateFlow<String?>(null)
-    val cartErrorMessage: StateFlow<String?> = _cartErrorMessage
 
     val totalAmount = cartItems.map { items ->
         items.sumOf { cartItem ->
             val product = products.value.find { it.productId == cartItem.productId.toLong() }
             (product?.price ?: 0.0) * cartItem.quantity
         }
-    }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-
-    fun addToCart(userId: Long, productId: Long, quantity: Int = 1) {
+    fun addProductToCart(productId: Long, quantity: Long = 1) {
         viewModelScope.launch {
             try {
-                repository.addToCart(userId, productId, quantity)
+                repository.addProductToCart(1L, productId, quantity)
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Error adding to cart: ${e.message}")
             }
         }
     }
 
-
-    fun removeFromCart(cartItemId: Long) {
-        _cartIsLoading.value = true
+    fun removeItemFromCart(cartItemId: Long) {
         viewModelScope.launch {
             try {
-                repository.removeCartItemById(cartItemId)
-                refreshCart()
-                _cartIsLoading.value = false
+                repository.removeItemFromCart(cartItemId)
             } catch (e: Exception) {
-                _cartErrorMessage.value = "Ошибка удаления из корзины: ${e.message}"
-                _cartIsLoading.value = false
+                Log.e("MainViewModel", "Error removing from cart: ${e.message}")
             }
         }
     }
 
-    fun loadCartItems() {
-        _cartIsLoading.value = true
+    fun clearCart() {
         viewModelScope.launch {
             try {
-                _cartItems.value = repository.getCartItemsForUserFlow(1).first()
-                _cartIsLoading.value = false
+                repository.clearUserCart(1L)
             } catch (e: Exception) {
-                _cartErrorMessage.value = "Ошибка загрузки корзины: ${e.message}"
-                _cartIsLoading.value = false
+                Log.e("MainViewModel", "Error clearing cart: ${e.message}")
             }
-        }
-    }
-
-    private fun refreshCart() {
-        viewModelScope.launch {
-            _cartItems.value = repository.getCartItemsForUserFlow(1).first()
         }
     }
 
@@ -116,67 +93,36 @@ class MainViewModel @Inject constructor(private val repository: StoreRepository)
     private val _reviews = MutableStateFlow<List<ReviewEntity>>(emptyList())
     val reviews: StateFlow<List<ReviewEntity>> = _reviews
 
-    private val _reviewIsLoading = MutableStateFlow(false)
-    val reviewIsLoading: StateFlow<Boolean> = _reviewIsLoading
-
-    private val _reviewErrorMessage = MutableStateFlow<String?>(null)
-    val reviewErrorMessage: StateFlow<String?> = _reviewErrorMessage
-
-    fun loadReviewsForProduct(productId: Long) {
-        _reviewIsLoading.value = true
+    fun loadReviews(productId: Long) {
         viewModelScope.launch {
             try {
                 _reviews.value = repository.getReviewsForProductFlow(productId).first()
-                _reviewIsLoading.value = false
             } catch (e: Exception) {
-                _reviewErrorMessage.value = "Ошибка загрузки отзывов: ${e.message}"
-                _reviewIsLoading.value = false
+                Log.e("MainViewModel", "Error loading reviews: ${e.message}")
             }
         }
     }
 
-    fun addReview(productId: Long, comment: String, rating: Int) {
-        _reviewIsLoading.value = true
+    fun addReview(productId: Long, rating: Int, comment: String) {
         viewModelScope.launch {
             try {
-                repository.addReview(1, productId, rating, comment)
-                loadReviewsForProduct(productId)
-                _reviewIsLoading.value = false
+                repository.addReview(1L, productId, rating, comment)
+                loadReviews(productId)
             } catch (e: Exception) {
-                _reviewErrorMessage.value = "Ошибка добавления отзыва: ${e.message}"
-                _reviewIsLoading.value = false
+                Log.e("MainViewModel", "Error adding review: ${e.message}")
             }
         }
     }
 
-    // Checkout state
-    private val _checkoutStatus = MutableStateFlow<CheckoutStatus?>(null)
-    val checkoutStatus: StateFlow<CheckoutStatus?> = _checkoutStatus
-
-    fun placeOrder(items: List<Pair<ProductEntity, Int>>, address: String) {
-        _checkoutStatus.value = CheckoutStatus.Loading
+    // Orders
+    fun createOrder(items: List<Pair<ProductEntity, Int>>, address: String) {
         viewModelScope.launch {
             try {
-                repository.placeOrder(1, items, address)
-                _checkoutStatus.value = CheckoutStatus.Success
-                refreshCart()
+                repository.createOrder(1L, items, address)
+                clearCart()
             } catch (e: Exception) {
-                _checkoutStatus.value = CheckoutStatus.Error(e.message ?: "Unknown error")
+                Log.e("MainViewModel", "Error creating order: ${e.message}")
             }
         }
-    }
-
-    sealed class CheckoutStatus {
-        object Loading : CheckoutStatus()
-        object Success : CheckoutStatus()
-        data class Error(val message: String) : CheckoutStatus()
-    }
-
-    // Global error handling
-    private val _globalErrorMessage = MutableStateFlow<String?>(null)
-    val globalErrorMessage: StateFlow<String?> = _globalErrorMessage
-
-    fun resetError() {
-        _globalErrorMessage.value = null
     }
 }

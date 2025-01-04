@@ -27,10 +27,10 @@ class StoreRepository @Inject constructor(
      * @param userId ID пользователя.
      * @param role Роль пользователя (например, "USER" или "ADMIN").
      */
-    fun saveCurrentUser(userId: Long, role: String) {
+    fun saveUser(userId: Long, role: String) {
         sharedPreferences.edit().apply {
-            putLong("userId", userId)
-            putString("role", role)
+            putLong("user_id", userId)
+            putString("user_role", role)
             apply()
         }
     }
@@ -39,16 +39,16 @@ class StoreRepository @Inject constructor(
      * Получает текущего пользователя из SharedPreferences.
      * @return Пара `userId` и `role`, или `(-1, null)`, если пользователь не найден.
      */
-    fun getCurrentUser(): Pair<Long, String?> {
-        val userId = sharedPreferences.getLong("userId", -1L)
-        val role = sharedPreferences.getString("role", null)
+    fun getUser(): Pair<Long, String?> {
+        val userId = sharedPreferences.getLong("user_id", -1L)
+        val role = sharedPreferences.getString("user_role", null)
         return userId to role
     }
 
     /**
      * Удаляет данные текущего пользователя из SharedPreferences (выход из системы).
      */
-    fun logout() {
+    fun logoutUser() {
         sharedPreferences.edit().clear().apply()
     }
 
@@ -67,6 +67,21 @@ class StoreRepository @Inject constructor(
      */
     fun getAccessoriesForProductFlow(parentId: Long): Flow<List<ProductEntity>> =
         productDao.getAccessoriesForProductFlow(parentId)
+
+    /**
+     * Обновляет аксессуары для товара.
+     * @param productId ID основного товара.
+     * @param accessoryId ID аксессуара.
+     * @param isAdding Флаг, добавлять или удалять аксессуар.
+     */
+    suspend fun updateProductAccessories(productId: Long, accessoryId: Long, isAdding: Boolean) {
+        if (productId == accessoryId) throw IllegalArgumentException("Продукт не может быть аксессуаром самого себя")
+        if (isAdding) {
+            productDao.addAccessoryToProduct(productId, accessoryId)
+        } else {
+            productDao.removeAccessoryFromProduct(productId, accessoryId)
+        }
+    }
 
     // --- Методы для работы с отзывами ---
 
@@ -128,25 +143,22 @@ class StoreRepository @Inject constructor(
      * @param quantity Количество.
      * @throws IllegalArgumentException Если товара недостаточно на складе.
      */
-    suspend fun addToCart(userId: Long, productId: Long, quantity: Int) {
+    suspend fun addProductToCart(userId: Long, productId: Long, quantity: Long = 1) {
         val product = productDao.getProductById(productId)
             ?: throw IllegalArgumentException("Товар не найден")
         if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара на складе")
 
-        val existingCartItems = cartDao.getCartItemsForUserFlow(userId).first()
-        val existingCartItem = existingCartItems.find { it.productId.toLong() == productId }
-
-        if (existingCartItem != null) {
-            val updatedQuantity = existingCartItem.quantity + quantity
-            val updatedCartItem = existingCartItem.copy(quantity = updatedQuantity)
-            cartDao.insertCartItem(updatedCartItem)
+        val cartItem = cartDao.getCartItemByUserIdAndProductId(userId, productId)
+        if (cartItem != null) {
+            cartDao.updateCartItemQuantity(cartItem.cartItemId, cartItem.quantity + quantity)
         } else {
-            val cartItem = CartItemEntity(
-                userId = userId,
-                productId = productId,
-                quantity = quantity
+            cartDao.insertCartItem(
+                CartItemEntity(
+                    userId = userId,
+                    productId = productId,
+                    quantity = quantity
+                )
             )
-            cartDao.insertCartItem(cartItem)
         }
     }
 
@@ -154,7 +166,7 @@ class StoreRepository @Inject constructor(
      * Удаляет товар из корзины по ID элемента корзины.
      * @param cartItemId ID элемента корзины.
      */
-    suspend fun removeCartItemById(cartItemId: Long) {
+    suspend fun removeItemFromCart(cartItemId: Long) {
         cartDao.deleteCartItemById(cartItemId)
     }
 
@@ -162,7 +174,7 @@ class StoreRepository @Inject constructor(
      * Очищает корзину пользователя.
      * @param userId ID пользователя.
      */
-    suspend fun clearCartForUser(userId: Long) {
+    suspend fun clearUserCart(userId: Long) {
         cartDao.clearCartForUser(userId)
     }
 
@@ -184,9 +196,9 @@ class StoreRepository @Inject constructor(
      * @return ID созданного заказа.
      * @throws IllegalArgumentException Если товаров недостаточно на складе.
      */
-    suspend fun placeOrder(
+    suspend fun createOrder(
         userId: Long,
-        items: List<Pair<ProductEntity, Int>>,
+        items: List<Pair<ProductEntity, Int>>, // Список пар (товар, количество).
         shippingAddress: String
     ): Long {
         items.forEach { (product, quantity) ->
@@ -216,7 +228,7 @@ class StoreRepository @Inject constructor(
             productDao.updateProduct(updatedProduct)
         }
 
-        clearCartForUser(userId)
+        clearUserCart(userId)
 
         return orderId
     }
@@ -235,6 +247,12 @@ class StoreRepository @Inject constructor(
         }
     }
 
+    /**
+     * Вспомогательный метод для создания заказа и его элементов в рамках одной транзакции.
+     * @param order Объект заказа.
+     * @param items Список элементов заказа.
+     * @return ID созданного заказа.
+     */
     @Transaction
     private suspend fun placeOrderWithItems(order: OrderEntity, items: List<OrderItemEntity>): Long {
         val orderId = orderDao.insertOrder(order)

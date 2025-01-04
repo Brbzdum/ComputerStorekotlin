@@ -27,6 +27,6 @@ data class CartItemEntity(
     @PrimaryKey(autoGenerate = true) val cartItemId: Long = 0,
     val userId: Long,
     val productId: Long,
-    val quantity: Int,
+    val quantity: Long,
 
     )
