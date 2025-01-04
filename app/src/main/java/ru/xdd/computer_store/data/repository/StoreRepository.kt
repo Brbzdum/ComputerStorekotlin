@@ -4,12 +4,13 @@ import android.content.SharedPreferences
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import ru.xdd.computer_store.data.dao.*
 import ru.xdd.computer_store.model.*
 import javax.inject.Inject
 
-
+/**
+ * Репозиторий для управления данными приложения.
+ */
 class StoreRepository @Inject constructor(
     private val sharedPreferences: SharedPreferences,
     private val userDao: UserDao,
@@ -19,59 +20,13 @@ class StoreRepository @Inject constructor(
     private val orderDao: OrderDao
 ) {
 
-    // В StoreRepository
-    suspend fun updateOrderStatus(orderId: Long, newStatus: OrderStatus) {
-        val order = orderDao.getOrderById(orderId)
-        if (order != null) {
-            orderDao.updateOrderStatus(orderId, newStatus) // Вызываем метод updateOrderStatus
-        } else {
-            throw IllegalArgumentException("Заказ с ID $orderId не найден.")
-        }
-    }
+    // --- Методы для работы с SharedPreferences ---
 
-
-    suspend fun getReviewsByProductId(productId: Long): List<ReviewEntity> {
-        return reviewDao.getReviewsForProductFlow(productId).first()
-    }
-
-
-
-    // Пользователи
-    suspend fun createUser(username: String, email: String, passwordHash: String, role: String = "USER") {
-        val userRole = Role.entries.find { it.name == role.uppercase() }
-            ?: throw IllegalArgumentException("Недопустимая роль: $role. Разрешенные роли: ${Role.entries.joinToString()}")
-
-        try {
-            userDao.insertUser(
-                UserEntity(
-                    username = username,
-                    email = email,
-                    passwordHash = passwordHash,
-                    role = userRole
-                )
-            )
-        } catch (e: android.database.sqlite.SQLiteConstraintException) {
-            throw IllegalArgumentException("Пользователь с таким именем или email уже существует")
-        }
-    }
-
-
-    suspend fun getUserByUsername(username: String): UserEntity? {
-        return userDao.getUserByUsername(username)
-            ?: throw IllegalArgumentException("Пользователь с таким именем не найден")
-    }
-
-    suspend fun deleteUserById(userId: Long) {
-        userDao.deleteUserById(userId)
-    }
-    // В StoreRepository
-    suspend fun getUserById(userId: Long): UserEntity? {
-        return userDao.getUserById(userId)
-    }
-
-    suspend fun getOrdersByUserId(userId: Long): List<OrderEntity> {
-        return orderDao.getOrdersByUserId(userId)
-    }
+    /**
+     * Сохраняет текущего пользователя в SharedPreferences.
+     * @param userId ID пользователя.
+     * @param role Роль пользователя (например, "USER" или "ADMIN").
+     */
     fun saveCurrentUser(userId: Long, role: String) {
         sharedPreferences.edit().apply {
             putLong("userId", userId)
@@ -80,65 +35,57 @@ class StoreRepository @Inject constructor(
         }
     }
 
-    // Получение текущего пользователя
+    /**
+     * Получает текущего пользователя из SharedPreferences.
+     * @return Пара `userId` и `role`, или `(-1, null)`, если пользователь не найден.
+     */
     fun getCurrentUser(): Pair<Long, String?> {
         val userId = sharedPreferences.getLong("userId", -1L)
         val role = sharedPreferences.getString("role", null)
         return userId to role
     }
 
-    // Удаление данных пользователя (logout)
+    /**
+     * Удаляет данные текущего пользователя из SharedPreferences (выход из системы).
+     */
     fun logout() {
         sharedPreferences.edit().clear().apply()
     }
 
-    fun getProductByIdBlocking(productId: Long): ProductEntity? = runBlocking {
-        productDao.getProductById(productId)
-    }
+    // --- Методы для работы с каталогом ---
 
-
-    suspend fun updateUser(user: UserEntity) {
-        userDao.updateUser(user)
-    }
-
-
-
-
-    suspend fun insertProduct(product: ProductEntity): Long {
-        return productDao.insertProduct(product)
-    }
-
-    suspend fun updateProduct(product: ProductEntity) {
-        productDao.updateProduct(product)
-    }
-
-    suspend fun deleteProduct(product: ProductEntity) {
-        productDao.deleteProduct(product)
-    }
-    fun getAllOrdersFlow(): Flow<List<OrderEntity>> {
-        return orderDao.getAllOrdersFlow()
-    }
-
-    // Управление аксессуарами
-    suspend fun addAccessoryToProduct(productId: Long, accessoryId: Long) {
-        if (productId == accessoryId) throw IllegalArgumentException("Продукт не может быть аксессуаром самого себя")
-        productDao.addAccessoryToProduct(productId, accessoryId)
-    }
-
-    suspend fun removeAccessoryFromProduct(productId: Long, accessoryId: Long) {
-        productDao.removeAccessoryFromProduct(productId, accessoryId)
-    }
-
-    // Потоки данных
+    /**
+     * Возвращает поток всех товаров в каталоге.
+     * @return Поток списка товаров.
+     */
     fun getAllProductsFlow(): Flow<List<ProductEntity>> = productDao.getAllProductsFlow()
-    fun getMainProductsFlow(): Flow<List<ProductEntity>> = productDao.getMainProductsFlow()
-    fun getAccessoriesForProductFlow(parentId: Long): Flow<List<ProductEntity>> = productDao.getAccessoriesForProductFlow(parentId)
-    fun getReviewsForProductFlow(productId: Long): Flow<List<ReviewEntity>> = reviewDao.getReviewsForProductFlow(productId)
-    fun getCartItemsForUserFlow(userId: Long): Flow<List<CartItemEntity>> = cartDao.getCartItemsForUserFlow(userId)
-    fun getAllUsersFlow(): Flow<List<UserEntity>> = userDao.getAllUsersFlow()
-    fun getOrdersForUserFlow(userId: Long): Flow<List<OrderEntity>> = orderDao.getOrdersForUserFlow(userId)
 
-    // Работа с отзывами
+    /**
+     * Возвращает поток аксессуаров для конкретного товара.
+     * @param parentId ID основного товара.
+     * @return Поток списка аксессуаров.
+     */
+    fun getAccessoriesForProductFlow(parentId: Long): Flow<List<ProductEntity>> =
+        productDao.getAccessoriesForProductFlow(parentId)
+
+    // --- Методы для работы с отзывами ---
+
+    /**
+     * Возвращает поток отзывов для конкретного товара.
+     * @param productId ID товара.
+     * @return Поток списка отзывов.
+     */
+    fun getReviewsForProductFlow(productId: Long): Flow<List<ReviewEntity>> =
+        reviewDao.getReviewsForProductFlow(productId)
+
+    /**
+     * Добавляет новый отзыв к товару.
+     * @param userId ID пользователя.
+     * @param productId ID товара.
+     * @param rating Рейтинг (1-5).
+     * @param comment Текст отзыва.
+     * @throws IllegalArgumentException Если пользователь не завершил покупку этого товара.
+     */
     suspend fun addReview(userId: Long, productId: Long, rating: Int, comment: String) {
         val hasPurchased = orderDao.hasCompletedOrderForProduct(userId, productId)
         if (!hasPurchased) throw IllegalArgumentException("Пользователь не завершил покупку данного товара")
@@ -150,25 +97,40 @@ class StoreRepository @Inject constructor(
             comment = comment
         )
         reviewDao.insertReview(review)
-        updateProductRating(productId) // Обновляем рейтинг после добавления отзыва
+        updateProductRating(productId)
     }
-    fun getAllReviewsFlow(): Flow<List<ReviewEntity>> = reviewDao.getAllReviewsFlow()
 
+    /**
+     * Удаляет отзыв по ID.
+     * @param reviewId ID отзыва.
+     */
+    suspend fun deleteReview(reviewId: Long) {
+        reviewDao.deleteReview(reviewId)
+    }
 
+    /**
+     * Обновляет средний рейтинг товара после добавления или удаления отзыва.
+     * @param productId ID товара.
+     */
     private suspend fun updateProductRating(productId: Long) {
         val reviews = reviewDao.getReviewsForProductFlow(productId).first()
-        val averageRating = if (reviews.isNotEmpty()) reviews.map { it.rating }.average().toFloat() else 0.0f
+        val averageRating =
+            if (reviews.isNotEmpty()) reviews.map { it.rating }.average().toFloat() else 0.0f
         productDao.updateRating(productId, averageRating)
     }
 
-    suspend fun deleteReview(reviewId: Long) {
-        reviewDao.deleteReview(reviewId)
-        // Опционально: Обновить рейтинг после удаления отзыва
-    }
+    // --- Методы для работы с корзиной ---
 
-    // Работа с корзиной
+    /**
+     * Добавляет товар в корзину пользователя.
+     * @param userId ID пользователя.
+     * @param productId ID товара.
+     * @param quantity Количество.
+     * @throws IllegalArgumentException Если товара недостаточно на складе.
+     */
     suspend fun addToCart(userId: Long, productId: Long, quantity: Int) {
-        val product = productDao.getProductById(productId) ?: throw IllegalArgumentException("Товар не найден")
+        val product = productDao.getProductById(productId)
+            ?: throw IllegalArgumentException("Товар не найден")
         if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара на складе")
 
         val existingCartItems = cartDao.getCartItemsForUserFlow(userId).first()
@@ -188,17 +150,45 @@ class StoreRepository @Inject constructor(
         }
     }
 
+    /**
+     * Удаляет товар из корзины по ID элемента корзины.
+     * @param cartItemId ID элемента корзины.
+     */
     suspend fun removeCartItemById(cartItemId: Long) {
         cartDao.deleteCartItemById(cartItemId)
     }
 
+    /**
+     * Очищает корзину пользователя.
+     * @param userId ID пользователя.
+     */
     suspend fun clearCartForUser(userId: Long) {
         cartDao.clearCartForUser(userId)
     }
 
-    // Работа с заказами
-    suspend fun placeOrder(userId: Long, items: List<Pair<ProductEntity, Int>>, shippingAddress: String): Long {
-        // Проверка наличия товаров на складе
+    /**
+     * Возвращает поток товаров в корзине пользователя.
+     * @param userId ID пользователя.
+     * @return Поток списка товаров в корзине.
+     */
+    fun getCartItemsForUserFlow(userId: Long): Flow<List<CartItemEntity>> =
+        cartDao.getCartItemsForUserFlow(userId)
+
+    // --- Методы для работы с заказами ---
+
+    /**
+     * Оформляет заказ на товары в корзине.
+     * @param userId ID пользователя.
+     * @param items Список товаров с количеством.
+     * @param shippingAddress Адрес доставки.
+     * @return ID созданного заказа.
+     * @throws IllegalArgumentException Если товаров недостаточно на складе.
+     */
+    suspend fun placeOrder(
+        userId: Long,
+        items: List<Pair<ProductEntity, Int>>,
+        shippingAddress: String
+    ): Long {
         items.forEach { (product, quantity) ->
             if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара ${product.name} на складе")
         }
@@ -213,7 +203,7 @@ class StoreRepository @Inject constructor(
         )
         val orderItems = items.map {
             OrderItemEntity(
-                orderId = 0, // будет установлен в транзакции placeOrderWithItems
+                orderId = 0, // Устанавливается после транзакции.
                 productId = it.first.productId,
                 quantity = it.second,
                 priceAtOrderTime = it.first.price
@@ -221,16 +211,28 @@ class StoreRepository @Inject constructor(
         }
         val orderId = placeOrderWithItems(order, orderItems)
 
-        // Обновление запасов на складе
         items.forEach { (product, quantity) ->
             val updatedProduct = product.copy(stock = product.stock - quantity)
             productDao.updateProduct(updatedProduct)
         }
 
-        // Очистка корзины пользователя
         clearCartForUser(userId)
 
         return orderId
+    }
+
+    /**
+     * Меняет статус заказа.
+     * @param orderId ID заказа.
+     * @param newStatus Новый статус заказа.
+     */
+    suspend fun updateOrderStatus(orderId: Long, newStatus: OrderStatus) {
+        val order = orderDao.getOrderById(orderId)
+        if (order != null) {
+            orderDao.updateOrderStatus(orderId, newStatus)
+        } else {
+            throw IllegalArgumentException("Заказ с ID $orderId не найден.")
+        }
     }
 
     @Transaction
@@ -240,44 +242,4 @@ class StoreRepository @Inject constructor(
         orderDao.insertOrderItems(itemsWithOrderId)
         return orderId
     }
-
-    // Управление аксессуарами
-    // Методы уже объявлены выше, убедитесь, что они объявлены только один раз
-    // fun addAccessoryToProduct и fun removeAccessoryFromProduct уже объявлены
-    fun getProductWithAccessoriesFlow(productId: Long): Flow<ProductWithAccessories> {
-        return productDao.getProductWithAccessoriesFlow(productId)
-    }
-
-    suspend fun getOrderItems(orderId: Long): List<OrderItemEntity> = orderDao.getOrderItems(orderId)
-    suspend fun hasCompletedOrderForProduct(userId: Long, productId: Long): Boolean {
-        return orderDao.hasCompletedOrderForProduct(userId, productId)
-    }
-    /**
-     * Поиск продуктов по названию.
-     * @param query Часть названия продукта для поиска.
-     * @return Поток списка продуктов, соответствующих запросу.
-     */
-    fun searchProductsByName(query: String): Flow<List<ProductEntity>> {
-        return productDao.searchProductsByName(query)
-    }
-
-    /**
-     * Фильтрация продуктов по категории.
-     * @param category Название категории.
-     * @return Поток списка продуктов в заданной категории.
-     */
-    fun filterProductsByCategory(category: String): Flow<List<ProductEntity>> {
-        return productDao.filterProductsByCategory(category)
-    }
-
-    /**
-     * Фильтрация продуктов по диапазону цен.
-     * @param minPrice Минимальная цена.
-     * @param maxPrice Максимальная цена.
-     * @return Поток списка продуктов в заданном ценовом диапазоне.
-     */
-    fun filterProductsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<ProductEntity>> {
-        return productDao.filterProductsByPriceRange(minPrice, maxPrice)
-    }
-
 }
