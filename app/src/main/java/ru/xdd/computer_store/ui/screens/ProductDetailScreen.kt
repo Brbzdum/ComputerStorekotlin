@@ -69,7 +69,7 @@ fun ProductDetailScreen(
                         if (isGuest) {
                             navController.navigate("login")
                         } else {
-                            // Добавить в корзину
+                            viewModel.addToCart(details.product.productId)
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -78,13 +78,17 @@ fun ProductDetailScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Аксессуары:", style = MaterialTheme.typography.titleMedium)
+                Text(text = "Рекомендуемые аксессуары:", style = MaterialTheme.typography.titleMedium)
                 LazyColumn {
                     items(details.accessories) { accessory ->
                         ProductCard(
                             product = accessory,
-                            onClick = { /* Переход к аксессуару */ },
-                            onAddToCart = { /* Логика добавления аксессуара */ }
+                            onClick = {
+                                navController.navigate("product_detail/${accessory.productId}")
+                            },
+                            onAddToCart = {
+                                viewModel.addToCart(accessory.productId)
+                            }
                         )
                     }
                 }
@@ -92,6 +96,7 @@ fun ProductDetailScreen(
         }
     }
 }
+
 
 
 

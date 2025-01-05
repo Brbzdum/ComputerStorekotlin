@@ -1,10 +1,12 @@
-// CartViewModel.kt
 package ru.xdd.computer_store.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.xdd.computer_store.data.repository.StoreRepository
 import ru.xdd.computer_store.model.CartItemEntity
@@ -16,50 +18,41 @@ class CartViewModel @Inject constructor(
     private val repository: StoreRepository
 ) : ViewModel() {
 
-    fun getCartItems(userId: Long): StateFlow<List<CartItemEntity>> =
-        repository.getCartItemsForUserFlow(userId)
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    private val userId: Long = 1L
 
-    fun getProductsMap(userId: Long): StateFlow<Map<Long, ProductEntity>> =
-        repository.getCartItemsForUserFlow(userId)
-            .map { items ->
-                items.associate { item ->
-                    item.productId to (repository.getProductByIdBlocking(item.productId) ?: ProductEntity())
-                }
-            }
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyMap())
+    // Поток элементов корзины
+    val cartItems: StateFlow<List<CartItemEntity>> = repository.getCartItemsForUserFlow(userId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Список всех продуктов (чтобы минимизировать частые обращения к репозиторию)
+    private val allProducts: StateFlow<List<ProductEntity>> = repository.getAllProductsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Общая стоимость
+    val totalAmount = cartItems.map { items ->
+        items.sumOf { cartItem ->
+            val product = allProducts.value.find { it.productId == cartItem.productId }
+            (product?.price ?: 0.0) * cartItem.quantity
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-
-
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
-    fun removeCartItem(cartItemId: Long) {
+    // Удаление товара из корзины
+    fun removeItemFromCart(cartItemId: Long) {
         viewModelScope.launch {
-            try {
-                repository.removeCartItemById(cartItemId)
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
-            }
+            repository.removeItemFromCart(cartItemId)
         }
     }
 
-    fun clearCart(userId: Long) {
+    // Обновление количества товара
+    fun updateCartItemQuantity(cartItemId: Long, quantity: Long) {
         viewModelScope.launch {
-            try {
-                repository.clearCartForUser(userId)
-            } catch (e: Exception) {
-                _errorMessage.value = e.message
-            }
+            repository.updateCartItemQuantity(cartItemId, quantity)
         }
     }
 
-    fun clearErrorMessage() {
-        _errorMessage.value = null
+    // Получение продукта по ID
+    fun getProductById(productId: Long): ProductEntity? {
+        return allProducts.value.find { it.productId == productId }
     }
 }
-
-
 

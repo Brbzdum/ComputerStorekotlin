@@ -27,29 +27,60 @@ class StoreRepository @Inject constructor(
      * @param userId ID пользователя.
      * @param role Роль пользователя (например, "USER" или "ADMIN").
      */
-    fun saveUser(userId: Long, role: String) {
+    fun saveUser(userId: Long, role: Role) {
         sharedPreferences.edit().apply {
             putLong("user_id", userId)
-            putString("user_role", role)
+            putString("user_role", role.toString()) // Сохраняем роль как строку
             apply()
         }
     }
 
     /**
+     * Создает нового пользователя в базе данных.
+     * @param username Имя пользователя.
+     * @param email Электронная почта.
+     * @param passwordHash Хэшированный пароль.
+     * @param role Роль пользователя (по умолчанию `Role.USER`).
+     * @return ID созданного пользователя.
+     */
+    suspend fun createUser(username: String, email: String, passwordHash: String, role: Role = Role.USER): Long {
+        val user = UserEntity(
+            username = username,
+            email = email,
+            passwordHash = passwordHash,
+            role = role
+        )
+        return userDao.insertUser(user) // Возвращаем результат выполнения insertUser
+    }
+
+
+
+
+    /**
      * Получает текущего пользователя из SharedPreferences.
      * @return Пара `userId` и `role`, или `(-1, null)`, если пользователь не найден.
      */
-    fun getUser(): Pair<Long, String?> {
+    fun getUser(): Pair<Long, Role?> {
         val userId = sharedPreferences.getLong("user_id", -1L)
-        val role = sharedPreferences.getString("user_role", null)
+        val roleString = sharedPreferences.getString("user_role", null)
+        val role = roleString?.let { Role.valueOf(it) } // Конвертируем строку обратно в Role
         return userId to role
     }
+
 
     /**
      * Удаляет данные текущего пользователя из SharedPreferences (выход из системы).
      */
     fun logoutUser() {
         sharedPreferences.edit().clear().apply()
+    }
+    /**
+     * Возвращает пользователя по имени пользователя.
+     * @param username Имя пользователя.
+     * @return Экземпляр `UserEntity`, если пользователь найден, иначе `null`.
+     */
+    suspend fun getUserByUsername(username: String): UserEntity? {
+        return userDao.getUserByUsername(username)
     }
 
     // --- Методы для работы с каталогом ---
@@ -67,6 +98,14 @@ class StoreRepository @Inject constructor(
      */
     fun getAccessoriesForProductFlow(parentId: Long): Flow<List<ProductEntity>> =
         productDao.getAccessoriesForProductFlow(parentId)
+
+    /**
+     * Возвращает поток продукта с аксессуарами.
+     * @param productId ID товара.
+     * @return Поток продукта с аксессуарами.
+     */
+    fun getProductWithAccessoriesFlow(productId: Long): Flow<ProductWithAccessories> =
+        productDao.getProductWithAccessoriesFlow(productId)
 
     /**
      * Обновляет аксессуары для товара.
@@ -161,6 +200,15 @@ class StoreRepository @Inject constructor(
             )
         }
     }
+    /**
+     * Обновляет количество товара в корзине.
+     * @param cartItemId ID элемента корзины.
+     * @param quantity Новое количество.
+     */
+    suspend fun updateCartItemQuantity(cartItemId: Long, quantity: Long) {
+        cartDao.updateCartItemQuantity(cartItemId, quantity)
+    }
+
 
     /**
      * Удаляет товар из корзины по ID элемента корзины.

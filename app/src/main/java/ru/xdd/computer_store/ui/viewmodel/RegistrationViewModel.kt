@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.mindrot.jbcrypt.BCrypt
 import ru.xdd.computer_store.data.repository.StoreRepository
+import ru.xdd.computer_store.model.Role
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,13 +28,21 @@ class RegistrationViewModel @Inject constructor(
             try {
                 _errorMessage.value = null
                 val hashedPassword = hashPassword(password)
-                repository.createUser(username, email, hashedPassword, role = "USER") // Роль всегда "USER"
+
+                // Получаем userId после создания пользователя
+                val userId = repository.createUser(username, email, hashedPassword, role = Role.USER)
+
+                // Сохраняем пользователя в SharedPreferences
+                repository.saveUser(userId, Role.USER)
                 _registrationSuccess.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Ошибка регистрации: ${e.message}"
             }
         }
+
+
     }
+
 
     private fun hashPassword(password: String): String {
         return BCrypt.hashpw(password, BCrypt.gensalt())

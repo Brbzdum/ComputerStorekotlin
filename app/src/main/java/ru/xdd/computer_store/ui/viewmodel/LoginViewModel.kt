@@ -25,9 +25,10 @@ class LoginViewModel @Inject constructor(private val repository: StoreRepository
     fun login(username: String, password: String) {
         viewModelScope.launch {
             try {
-                _errorMessage.value = null // Сбрасываем предыдущие ошибки
+                _errorMessage.value = null
                 val userFromDb = repository.getUserByUsername(username)
                 if (userFromDb != null && checkPassword(password, userFromDb.passwordHash)) {
+                    repository.saveUser(userFromDb.userId, userFromDb.role)
                     _user.value = userFromDb
                 } else {
                     _errorMessage.value = "Неверное имя пользователя или пароль"
@@ -37,6 +38,7 @@ class LoginViewModel @Inject constructor(private val repository: StoreRepository
             }
         }
     }
+
 
     private fun checkPassword(password: String, hashedPassword: String): Boolean {
         return BCrypt.checkpw(password, hashedPassword)
