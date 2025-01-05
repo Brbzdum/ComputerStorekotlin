@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -18,17 +19,28 @@ class CartViewModel @Inject constructor(
     private val repository: StoreRepository
 ) : ViewModel() {
 
-    private val userId: Long = 1L
+    // Получаем текущего пользователя из SharedPreferences
+    private val currentUser = repository.getUser()
+    private val userId: Long = currentUser.first // ID текущего пользователя
 
-    // Поток элементов корзины
+    // Проверка авторизации
+    val isUserLoggedIn: StateFlow<Boolean> = flow {
+        emit(userId != -1L && currentUser.second != null)
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        false
+    )
+
+    // Поток элементов корзины для текущего пользователя
     val cartItems: StateFlow<List<CartItemEntity>> = repository.getCartItemsForUserFlow(userId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Список всех продуктов (чтобы минимизировать частые обращения к репозиторию)
+    // Список всех продуктов
     private val allProducts: StateFlow<List<ProductEntity>> = repository.getAllProductsFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Общая стоимость
+    // Общая стоимость корзины
     val totalAmount = cartItems.map { items ->
         items.sumOf { cartItem ->
             val product = allProducts.value.find { it.productId == cartItem.productId }
@@ -54,5 +66,12 @@ class CartViewModel @Inject constructor(
     fun getProductById(productId: Long): ProductEntity? {
         return allProducts.value.find { it.productId == productId }
     }
+    fun clearCart() {
+        viewModelScope.launch {
+            repository.clearUserCart(userId)
+        }
+    }
+
 }
+
 

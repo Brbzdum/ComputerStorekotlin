@@ -67,24 +67,37 @@ fun CartScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = {
-                        if (isUserLoggedIn) {
-                            navController.navigate("checkout_screen")
-                        } else {
-                            navController.navigate("registration_screen")
-                        }
-                    },
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Оформить заказ: $totalAmount ₽")
+                    Button(
+                        onClick = { viewModel.clearCart() },
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    ) {
+                        Text("Очистить корзину")
+                    }
+
+                    Button(
+                        onClick = {
+                            if (isUserLoggedIn) {
+                                navController.navigate("checkout_screen")
+                            } else {
+                                navController.navigate("registration_screen")
+                            }
+                        },
+                        modifier = Modifier.weight(1f).padding(start = 8.dp)
+                    ) {
+                        Text("Оформить заказ: $totalAmount ₽")
+                    }
                 }
             }
         }
     }
 }
+
 
 
 

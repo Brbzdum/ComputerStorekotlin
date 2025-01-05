@@ -1,13 +1,20 @@
 package ru.xdd.computer_store.ui.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.xdd.computer_store.data.repository.StoreRepository
-import ru.xdd.computer_store.model.*
+import ru.xdd.computer_store.model.CartItemEntity
+import ru.xdd.computer_store.model.ProductEntity
+import ru.xdd.computer_store.utils.GUEST_USER_ID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -51,21 +58,20 @@ class MainViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     fun addToCart(productId: Long, quantity: Long = 1) {
+        val (userId, role) = repository.getUser()
+
         viewModelScope.launch {
-            repository.addProductToCart(1L, productId, quantity)
+            // Если пользователь не авторизован, используем гостевой режим
+            val actualUserId = if (userId == -1L) {
+                GUEST_USER_ID // Константа для гостевого пользователя
+            } else {
+                userId
+            }
+
+            repository.addProductToCart(actualUserId, productId, quantity)
         }
     }
 
-    fun removeFromCart(cartItemId: Long) {
-        viewModelScope.launch {
-            repository.removeItemFromCart(cartItemId)
-        }
-    }
 
-    fun clearCart() {
-        viewModelScope.launch {
-            repository.clearUserCart(1L)
-        }
-    }
 }
 

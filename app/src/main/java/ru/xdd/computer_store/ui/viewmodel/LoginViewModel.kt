@@ -40,6 +40,7 @@ class LoginViewModel @Inject constructor(private val repository: StoreRepository
     }
 
 
+
     private fun checkPassword(password: String, hashedPassword: String): Boolean {
         return BCrypt.checkpw(password, hashedPassword)
     }

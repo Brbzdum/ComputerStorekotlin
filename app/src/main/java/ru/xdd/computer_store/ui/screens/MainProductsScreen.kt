@@ -18,11 +18,9 @@ import ru.xdd.computer_store.ui.viewmodel.MainViewModel
 @Composable
 fun MainProductsScreen(
     navController: NavController,
-    userId: Long,
     viewModel: MainViewModel = hiltViewModel()
 ) {
-    // Данные из ViewModel
-    val filteredProducts by viewModel.filteredProducts.collectAsState()
+    val products by viewModel.products.collectAsState() // Заменили filteredProducts на products
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
 
@@ -42,7 +40,6 @@ fun MainProductsScreen(
                 .padding(paddingValues)
                 .padding(8.dp)
         ) {
-            // Поле для поиска
             SearchBar(
                 query = searchQuery,
                 onQueryChange = viewModel::updateSearchQuery
@@ -50,7 +47,6 @@ fun MainProductsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Выпадающее меню категорий
             CategoryDropdownMenu(
                 selectedCategory = selectedCategory,
                 categories = listOf("Все категории", "Ноутбуки", "Компьютеры", "Аксессуары"),
@@ -59,19 +55,19 @@ fun MainProductsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Список товаров
             ProductList(
-                products = filteredProducts,
+                products = products,
                 onProductClick = { productId ->
                     navController.navigate("product_detail/$productId")
                 },
                 onAddToCart = { productId ->
-                    viewModel.addProductToCart(userId, productId)
+                    viewModel.addToCart(productId) // Заменили addProductToCart на addToCart
                 }
             )
         }
     }
 }
+
 
 @Composable
 fun SearchBar(query: String, onQueryChange: (String) -> Unit) {

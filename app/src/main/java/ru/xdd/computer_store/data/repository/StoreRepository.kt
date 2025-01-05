@@ -2,10 +2,13 @@ package ru.xdd.computer_store.data.repository
 
 import android.content.SharedPreferences
 import androidx.room.Transaction
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import ru.xdd.computer_store.data.dao.*
 import ru.xdd.computer_store.model.*
+import ru.xdd.computer_store.utils.GUEST_USER_ID
 import javax.inject.Inject
 
 /**
@@ -81,6 +84,64 @@ class StoreRepository @Inject constructor(
      */
     suspend fun getUserByUsername(username: String): UserEntity? {
         return userDao.getUserByUsername(username)
+    }
+
+    // --- Методы для работы с Гостем ---
+    /**
+     * Добавляет товар в корзину гостя.
+     * @param productId ID товара, который нужно добавить.
+     * @param quantity Количество товара.
+     */
+    private fun addGuestCartItem(productId: Long, quantity: Long) {
+        val cartKey = "guest_cart" // Ключ для хранения корзины гостя в SharedPreferences
+
+        // Получаем текущую корзину из SharedPreferences
+        val cartJson = sharedPreferences.getString(cartKey, null)
+        val cartItems: MutableMap<Long, Long> = if (cartJson != null) {
+            // Если корзина уже существует, преобразуем JSON в Map
+            Gson().fromJson(cartJson, object : TypeToken<MutableMap<Long, Long>>() {}.type)
+        } else {
+            // Если корзина отсутствует, создаём новую пустую Map
+            mutableMapOf()
+        }
+
+        // Добавляем товар в корзину или обновляем его количество
+        cartItems[productId] = (cartItems[productId] ?: 0) + quantity
+
+        // Сохраняем обновлённую корзину обратно в SharedPreferences в виде JSON
+        sharedPreferences.edit()
+            .putString(cartKey, Gson().toJson(cartItems))
+            .apply()
+    }
+
+    /**
+     * Получает содержимое корзины гостя.
+     * @return Map, где ключ — ID товара, а значение — его количество.
+     */
+    fun getGuestCartItems(): Map<Long, Long> {
+        val cartKey = "guest_cart" // Ключ для получения корзины гостя из SharedPreferences
+
+        // Получаем корзину гостя из SharedPreferences
+        val cartJson = sharedPreferences.getString(cartKey, null)
+        return if (cartJson != null) {
+            // Если корзина существует, преобразуем JSON в Map
+            Gson().fromJson(cartJson, object : TypeToken<Map<Long, Long>>() {}.type)
+        } else {
+            // Если корзина отсутствует, возвращаем пустую Map
+            emptyMap()
+        }
+    }
+
+    /**
+     * Очищает корзину гостя.
+     */
+    fun clearGuestCart() {
+        val cartKey = "guest_cart" // Ключ для удаления корзины гостя из SharedPreferences
+
+        // Удаляем корзину гостя из SharedPreferences
+        sharedPreferences.edit()
+            .remove(cartKey)
+            .apply()
     }
 
     // --- Методы для работы с каталогом ---
@@ -183,21 +244,27 @@ class StoreRepository @Inject constructor(
      * @throws IllegalArgumentException Если товара недостаточно на складе.
      */
     suspend fun addProductToCart(userId: Long, productId: Long, quantity: Long = 1) {
-        val product = productDao.getProductById(productId)
-            ?: throw IllegalArgumentException("Товар не найден")
-        if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара на складе")
-
-        val cartItem = cartDao.getCartItemByUserIdAndProductId(userId, productId)
-        if (cartItem != null) {
-            cartDao.updateCartItemQuantity(cartItem.cartItemId, cartItem.quantity + quantity)
+        if (userId == GUEST_USER_ID) {
+            // Обработка для гостя (например, отдельная таблица или логика в памяти)
+            addGuestCartItem(productId, quantity)
         } else {
-            cartDao.insertCartItem(
-                CartItemEntity(
-                    userId = userId,
-                    productId = productId,
-                    quantity = quantity
+            // Стандартная логика для авторизованных пользователей
+            val product = productDao.getProductById(productId)
+                ?: throw IllegalArgumentException("Товар не найден")
+            if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара на складе")
+
+            val cartItem = cartDao.getCartItemByUserIdAndProductId(userId, productId)
+            if (cartItem != null) {
+                cartDao.updateCartItemQuantity(cartItem.cartItemId, cartItem.quantity + quantity)
+            } else {
+                cartDao.insertCartItem(
+                    CartItemEntity(
+                        userId = userId,
+                        productId = productId,
+                        quantity = quantity
+                    )
                 )
-            )
+            }
         }
     }
     /**
