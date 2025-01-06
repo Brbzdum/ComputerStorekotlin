@@ -6,11 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.xdd.computer_store.data.repository.StoreRepository
-import ru.xdd.computer_store.model.OrderEntity
-import ru.xdd.computer_store.model.OrderStatus
-import ru.xdd.computer_store.model.ProductEntity
-import ru.xdd.computer_store.model.ReviewEntity
-import ru.xdd.computer_store.model.UserEntity
+import ru.xdd.computer_store.model.*
 import javax.inject.Inject
 
 @HiltViewModel
@@ -22,6 +18,12 @@ class AdminViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val orders: StateFlow<List<OrderEntity>> = repository.getOrdersForAdminFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val reviews: StateFlow<List<ReviewEntity>> = repository.getAllReviewsFlow()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val users: StateFlow<List<UserEntity>> = repository.getAllUsersFlow()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -121,5 +123,34 @@ class AdminViewModel @Inject constructor(
             }
         }
     }
-}
 
+    fun addUser(user: UserEntity) {
+        viewModelScope.launch {
+            try {
+                repository.createUser(user.username, user.email, user.passwordHash, user.role)
+            } catch (e: Exception) {
+                setError("Ошибка добавления пользователя: ${e.message}")
+            }
+        }
+    }
+
+    fun deleteUser(userId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.deleteUserById(userId)
+            } catch (e: Exception) {
+                setError("Ошибка удаления пользователя: ${e.message}")
+            }
+        }
+    }
+
+    fun updateUser(user: UserEntity) {
+        viewModelScope.launch {
+            try {
+                repository.updateUser(user)
+            } catch (e: Exception) {
+                setError("Ошибка обновления пользователя: ${e.message}")
+            }
+        }
+    }
+}

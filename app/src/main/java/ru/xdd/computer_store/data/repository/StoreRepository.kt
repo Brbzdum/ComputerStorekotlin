@@ -86,8 +86,38 @@ class StoreRepository @Inject constructor(
     suspend fun getUserByUsername(username: String): UserEntity? {
         return userDao.getUserByUsername(username)
     }
+
     // --- Админские методы ---
 
+    /**
+     * Обновляет данные существующего пользователя в базе данных.
+     * Администратор может использовать этот метод для изменения данных пользователя,
+     * таких как имя, электронная почта или роль.
+     *
+     * @param user Экземпляр UserEntity с обновленными данными пользователя.
+     */
+    suspend fun updateUser(user: UserEntity) {
+        userDao.updateUser(user)
+    }
+    /**
+     * Удаляет пользователя из базы данных по его уникальному идентификатору (ID).
+     * Этот метод используется администратором для удаления учетных записей пользователей, если это необходимо.
+     *
+     * @param userId Уникальный идентификатор пользователя, который нужно удалить.
+     */
+    suspend fun deleteUserById(userId: Long) {
+        userDao.deleteUserById(userId)
+    }
+
+    /**
+     * Получает поток всех пользователей из базы данных.
+     * Этот метод предоставляет администратору возможность наблюдать за всеми зарегистрированными пользователями.
+     *
+     * @return Поток списка пользователей (Flow<List<UserEntity>>).
+     */
+    fun getAllUsersFlow(): Flow<List<UserEntity>> {
+        return userDao.getAllUsersFlow()
+    }
     /**
      * Получает поток всех заказов для администратора.
      * @return Поток списка всех заказов.
@@ -251,6 +281,15 @@ class StoreRepository @Inject constructor(
     }
 
     // --- Методы для работы с отзывами ---
+    /**
+     * Получает поток всех отзывов из базы данных.
+     * Этот метод полезен для администраторов, чтобы они могли видеть все отзывы в системе.
+     *
+     * @return Поток списка отзывов (Flow<List<ReviewEntity>>).
+     */
+    fun getAllReviewsFlow(): Flow<List<ReviewEntity>> {
+        return reviewDao.getAllReviewsFlow()
+    }
 
     /**
      * Возвращает поток отзывов для конкретного товара.

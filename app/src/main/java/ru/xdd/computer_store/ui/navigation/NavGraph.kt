@@ -5,6 +5,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import ru.xdd.computer_store.ui.screens.*
+import ru.xdd.computer_store.ui.screens.admin.AdminDashboardScreen
+import ru.xdd.computer_store.ui.screens.admin.AdminOrderScreen
+import ru.xdd.computer_store.ui.screens.admin.AdminProductScreen
+import ru.xdd.computer_store.ui.screens.admin.AdminReviewScreen
+import ru.xdd.computer_store.ui.screens.admin.AdminUserScreen
 
 @Composable
 fun StoreNavGraph(
@@ -14,7 +19,7 @@ fun StoreNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = "main_products"
+        startDestination = if (userRole == "ADMIN") "admin_dashboard" else "main_products"
     ) {
         // Главная страница каталога
         composable("main_products") {
@@ -27,8 +32,12 @@ fun StoreNavGraph(
             if (productId != null) {
                 ProductDetailScreen(
                     productId = productId,
-                    navController = navController
+                    navController = navController,
+                    userId = userId // Передаем userId
                 )
+            } else {
+                // Обработка ошибки
+                navController.navigate("main_products")
             }
         }
 
@@ -37,10 +46,10 @@ fun StoreNavGraph(
             CartScreen(navController = navController)
         }
 
-        // Профиль (проверка авторизации)
+        // Профиль
         composable("profile") {
             if (userId == -1L) {
-                navController.navigate("login?redirect=profile")
+                redirectToLogin(navController, "profile")
             } else {
                 ProfileScreen(navController = navController)
             }
@@ -49,32 +58,65 @@ fun StoreNavGraph(
         // Оформление заказа
         composable("checkout") {
             if (userId == -1L) {
-                navController.navigate("login?redirect=checkout")
+                redirectToLogin(navController, "checkout")
             } else {
-                CheckoutScreen(navController = navController)
+                CheckoutScreen(
+                    navController = navController,
+                    userId = userId // Передаем userId
+                )
             }
         }
 
         // Авторизация
         composable("login?redirect={redirect}") { backStackEntry ->
-            val redirect = backStackEntry.arguments?.getString("redirect")
-            LoginScreen(
-                navController = navController,
-                redirect = redirect
-            )
+            val redirect = backStackEntry.arguments?.getString("redirect") ?: "main_products"
+            LoginScreen(navController = navController, redirect = redirect)
         }
 
         // Регистрация
         composable("register?redirect={redirect}") { backStackEntry ->
-            val redirect = backStackEntry.arguments?.getString("redirect")
+            val redirect = backStackEntry.arguments?.getString("redirect") ?: "main_products"
             RegistrationScreen(
                 navController = navController,
                 onRegistrationSuccess = {
-                    navController.navigate(redirect ?: "main_products") {
+                    navController.navigate(redirect) {
                         popUpTo("register") { inclusive = true }
                     }
                 }
             )
         }
+
+        // Админ: Главная панель
+        if (userRole == "ADMIN") {
+            composable("admin_dashboard") {
+                AdminDashboardScreen(navController = navController)
+            }
+
+            // Админ: Управление заказами
+            composable("admin_orders") {
+                AdminOrderScreen(navController = navController)
+            }
+
+            // Админ: Управление пользователями
+            composable("admin_users") {
+                AdminUserScreen(navController = navController)
+            }
+
+            // Админ: Управление продуктами
+            composable("admin_products") {
+                AdminProductScreen(navController = navController)
+            }
+
+            // Админ: Управление отзывами
+            composable("admin_reviews") {
+                AdminReviewScreen()
+            }
+        }
     }
 }
+
+// Вспомогательная функция для перенаправления на логин
+private fun redirectToLogin(navController: NavHostController, redirect: String) {
+    navController.navigate("login?redirect=$redirect")
+}
+

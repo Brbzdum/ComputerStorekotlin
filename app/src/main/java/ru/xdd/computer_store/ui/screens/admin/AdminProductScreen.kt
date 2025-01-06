@@ -20,11 +20,12 @@ import ru.xdd.computer_store.ui.viewmodel.admin.AdminViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminProductScreen(
+
     navController: NavController,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
     val products by viewModel.products.collectAsState()
-    val selectedProductAccessories by viewModel.selectedProductAccessories.collectAsState()
+    val selectedProductAccessories by viewModel.accessories.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }

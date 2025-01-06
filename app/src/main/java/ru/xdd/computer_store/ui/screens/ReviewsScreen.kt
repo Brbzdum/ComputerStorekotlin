@@ -117,7 +117,7 @@ fun ReviewsScreen(
                 LazyColumn {
                     items(reviews) { review ->
                         ReviewItem(review = review)
-                        Divider()
+                        HorizontalDivider()
                     }
                 }
             }
