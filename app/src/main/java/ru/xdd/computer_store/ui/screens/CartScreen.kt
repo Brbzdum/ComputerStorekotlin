@@ -3,6 +3,8 @@ package ru.xdd.computer_store.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -28,7 +30,14 @@ fun CartScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Корзина") }
+                title = { Text("Корзина") },
+                actions = {
+                    if (cartItems.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.clearCart() }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Очистить корзину")
+                        }
+                    }
+                }
             )
         },
         bottomBar = {
@@ -55,48 +64,37 @@ fun CartScreen(
                             CartItemCard(
                                 cartItem = cartItem,
                                 product = product,
-                                onRemove = { viewModel.removeItemFromCart(cartItem.cartItemId) },
+                                onRemove = { viewModel.removeFromCart(cartItem.cartItemId, cartItem.productId) },
                                 onUpdateQuantity = { cartItemId, quantity ->
                                     viewModel.updateCartItemQuantity(cartItemId, quantity)
                                 }
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
 
+
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Row(
+                Button(
+                    onClick = {
+                        if (isUserLoggedIn) {
+                            navController.navigate("checkout_screen")
+                        } else {
+                            navController.navigate("registration_screen")
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(16.dp)
                 ) {
-                    Button(
-                        onClick = { viewModel.clearCart() },
-                        modifier = Modifier.weight(1f).padding(end = 8.dp)
-                    ) {
-                        Text("Очистить корзину")
-                    }
-
-                    Button(
-                        onClick = {
-                            if (isUserLoggedIn) {
-                                navController.navigate("checkout_screen")
-                            } else {
-                                navController.navigate("registration_screen")
-                            }
-                        },
-                        modifier = Modifier.weight(1f).padding(start = 8.dp)
-                    ) {
-                        Text("Оформить заказ: $totalAmount ₽")
-                    }
+                    Text("Оформить заказ: $totalAmount ₽")
                 }
             }
         }
     }
 }
+
 
 
 

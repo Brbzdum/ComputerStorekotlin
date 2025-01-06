@@ -19,5 +19,5 @@ class OrdersViewModel @Inject constructor(
         repository.getOrdersForUserFlow(userId)
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // Дополнительные методы, если необходимо
+
 }

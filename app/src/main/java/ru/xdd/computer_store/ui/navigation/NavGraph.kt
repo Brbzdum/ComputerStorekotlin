@@ -18,30 +18,26 @@ fun StoreNavGraph(
     ) {
         // Главная страница каталога
         composable("main_products") {
-            MainProductsScreen(
-                navController = navController,
-                userId = userId
-            )
+            MainProductsScreen(navController = navController)
         }
 
         // Карточка товара
         composable("product_detail/{productId}") { backStackEntry ->
             val productId = backStackEntry.arguments?.getString("productId")?.toLongOrNull()
-            productId?.let {
+            if (productId != null) {
                 ProductDetailScreen(
-                    productId = it,
-                    userId = userId,
+                    productId = productId,
                     navController = navController
                 )
             }
         }
 
-        // Корзина доступна всем пользователям
+        // Корзина
         composable("cart") {
-            CartScreen(userId = userId, navController = navController)
+            CartScreen(navController = navController)
         }
 
-        // Профиль (только для авторизованных пользователей)
+        // Профиль (проверка авторизации)
         composable("profile") {
             if (userId == -1L) {
                 navController.navigate("login?redirect=profile")
@@ -50,22 +46,22 @@ fun StoreNavGraph(
             }
         }
 
-        // Оформление заказа (только для авторизованных)
+        // Оформление заказа
         composable("checkout") {
             if (userId == -1L) {
                 navController.navigate("login?redirect=checkout")
             } else {
-                OrdersScreen(
-                    navController = navController,
-                    userId = userId
-                )
+                CheckoutScreen(navController = navController)
             }
         }
 
         // Авторизация
         composable("login?redirect={redirect}") { backStackEntry ->
             val redirect = backStackEntry.arguments?.getString("redirect")
-            LoginScreen(navController = navController, redirect = redirect)
+            LoginScreen(
+                navController = navController,
+                redirect = redirect
+            )
         }
 
         // Регистрация
@@ -74,18 +70,11 @@ fun StoreNavGraph(
             RegistrationScreen(
                 navController = navController,
                 onRegistrationSuccess = {
-                    if (redirect != null) {
-                        navController.navigate(redirect) {
-                            popUpTo("register") { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate("main_products") {
-                            popUpTo("register") { inclusive = true }
-                        }
+                    navController.navigate(redirect ?: "main_products") {
+                        popUpTo("register") { inclusive = true }
                     }
                 }
             )
         }
     }
 }
-

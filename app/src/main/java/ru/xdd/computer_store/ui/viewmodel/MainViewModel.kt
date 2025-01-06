@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import ru.xdd.computer_store.data.repository.StoreRepository
 import ru.xdd.computer_store.model.CartItemEntity
 import ru.xdd.computer_store.model.ProductEntity
-import ru.xdd.computer_store.utils.GUEST_USER_ID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -58,19 +57,19 @@ class MainViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     fun addToCart(productId: Long, quantity: Long = 1) {
-        val (userId, role) = repository.getUser()
-
         viewModelScope.launch {
-            // Если пользователь не авторизован, используем гостевой режим
-            val actualUserId = if (userId == -1L) {
-                GUEST_USER_ID // Константа для гостевого пользователя
+            val (userId, role) = repository.getUser() // Проверяем, авторизован ли пользователь
+            if (userId != -1L && role != null) {
+                // Если пользователь авторизован, добавляем товар в корзину в базе данных
+                repository.addProductToCart(userId, productId, quantity)
             } else {
-                userId
+                // Если пользователь не авторизован, используем гостевую корзину
+                repository.addGuestCartItem(productId, quantity)
             }
-
-            repository.addProductToCart(actualUserId, productId, quantity)
         }
     }
+
+
 
 
 }

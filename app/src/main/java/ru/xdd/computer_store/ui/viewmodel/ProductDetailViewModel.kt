@@ -18,15 +18,14 @@ class ProductDetailViewModel @Inject constructor(
         repository.getProductWithAccessoriesFlow(productId)
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
-    fun addAccessory(productId: Long, accessoryId: Long) {
+    // Добавление товара в корзину
+    fun addToCart(productId: Long, userId: Long) {
         viewModelScope.launch {
-            repository.updateProductAccessories(productId, accessoryId, isAdding = true)
-        }
-    }
-
-    fun removeAccessory(productId: Long, accessoryId: Long) {
-        viewModelScope.launch {
-            repository.updateProductAccessories(productId, accessoryId, isAdding = false)
+            if (userId == -1L) { // Гостевой пользователь
+                repository.addGuestCartItem(productId, 1)
+            } else { // Авторизованный пользователь
+                repository.addProductToCart(userId, productId)
+            }
         }
     }
 }

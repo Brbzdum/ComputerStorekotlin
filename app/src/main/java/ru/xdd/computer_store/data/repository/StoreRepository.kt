@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import ru.xdd.computer_store.data.dao.*
 import ru.xdd.computer_store.model.*
 import ru.xdd.computer_store.utils.GUEST_USER_ID
+
 import javax.inject.Inject
 
 /**
@@ -85,14 +86,47 @@ class StoreRepository @Inject constructor(
     suspend fun getUserByUsername(username: String): UserEntity? {
         return userDao.getUserByUsername(username)
     }
+    // --- Админские методы ---
 
+    /**
+     * Получает поток всех заказов для администратора.
+     * @return Поток списка всех заказов.
+     */
+    fun getOrdersForAdminFlow(): Flow<List<OrderEntity>> {
+        return orderDao.getAllOrdersFlow()
+    }
+
+    /**
+     * Добавляет новый продукт в базу данных.
+     * @param product Продукт для добавления.
+     */
+    suspend fun addProduct(product: ProductEntity) {
+        productDao.insertProduct(product)
+    }
+
+    /**
+     * Обновляет существующий продукт в базе данных.
+     * @param product Продукт для обновления.
+     */
+    suspend fun updateProduct(product: ProductEntity) {
+        productDao.updateProduct(product)
+    }
+
+    /**
+     * Удаляет продукт из базы данных по его ID.
+     * @param productId ID продукта для удаления.
+     */
+    suspend fun deleteProduct(productId: Long) {
+        productDao.deleteProductById(productId)
+    }
     // --- Методы для работы с Гостем ---
+
     /**
      * Добавляет товар в корзину гостя.
      * @param productId ID товара, который нужно добавить.
      * @param quantity Количество товара.
      */
-    private fun addGuestCartItem(productId: Long, quantity: Long) {
+    fun addGuestCartItem(productId: Long, quantity: Long) {
         val cartKey = "guest_cart" // Ключ для хранения корзины гостя в SharedPreferences
 
         // Получаем текущую корзину из SharedPreferences
@@ -114,6 +148,7 @@ class StoreRepository @Inject constructor(
             .apply()
     }
 
+
     /**
      * Получает содержимое корзины гостя.
      * @return Map, где ключ — ID товара, а значение — его количество.
@@ -131,6 +166,31 @@ class StoreRepository @Inject constructor(
             emptyMap()
         }
     }
+    /**
+     * Удаляет товар из корзины гостя.
+     * @param productId ID товара, который нужно удалить.
+     */
+    fun removeGuestCartItem(productId: Long) {
+        val cartKey = "guest_cart" // Ключ для хранения корзины гостя в SharedPreferences
+
+        // Получаем текущую корзину из SharedPreferences
+        val cartJson = sharedPreferences.getString(cartKey, null)
+        val cartItems: MutableMap<Long, Long> = if (cartJson != null) {
+            // Если корзина уже существует, преобразуем JSON в Map
+            Gson().fromJson(cartJson, object : TypeToken<MutableMap<Long, Long>>() {}.type)
+        } else {
+            // Если корзина отсутствует, создаём новую пустую Map
+            mutableMapOf()
+        }
+
+        // Удаляем товар из корзины
+        cartItems.remove(productId)
+
+        // Сохраняем обновлённую корзину обратно в SharedPreferences
+        sharedPreferences.edit()
+            .putString(cartKey, Gson().toJson(cartItems))
+            .apply()
+    }
 
     /**
      * Очищает корзину гостя.
@@ -143,6 +203,13 @@ class StoreRepository @Inject constructor(
             .remove(cartKey)
             .apply()
     }
+    fun updateGuestCartItems(cartItems: Map<Long, Long>) {
+        val cartKey = "guest_cart"
+        sharedPreferences.edit()
+            .putString(cartKey, Gson().toJson(cartItems))
+            .apply()
+    }
+
 
     // --- Методы для работы с каталогом ---
 
@@ -375,4 +442,13 @@ class StoreRepository @Inject constructor(
         orderDao.insertOrderItems(itemsWithOrderId)
         return orderId
     }
+    /**
+     * Возвращает поток заказов для пользователя.
+     * @param userId ID пользователя.
+     * @return Поток списка заказов.
+     */
+    fun getOrdersForUserFlow(userId: Long): Flow<List<OrderEntity>> {
+        return orderDao.getOrdersForUserFlow(userId)
+    }
+
 }

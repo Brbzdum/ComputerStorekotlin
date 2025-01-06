@@ -16,13 +16,15 @@ interface ProductDao {
     @Delete
     suspend fun deleteProduct(product: ProductEntity)
 
+    @Query("DELETE FROM products WHERE productId = :productId")
+    suspend fun deleteProductById(productId: Long)
+
     @Query("SELECT * FROM products")
     fun getAllProductsFlow(): Flow<List<ProductEntity>>
 
     @Query("SELECT * FROM products WHERE productId = :productId")
     suspend fun getProductById(productId: Long): ProductEntity?
 
-    // Получение рекомендованных аксессуаров
     @Query("""
         SELECT p.*
         FROM products p
@@ -47,7 +49,6 @@ interface ProductDao {
         deleteProductAccessoryCrossRef(ProductAccessoryCrossRef(productId, accessoryId))
     }
 
-    // Фильтрация и поиск продуктов
     @Query("SELECT * FROM products WHERE name LIKE '%' || :query || '%'")
     fun searchProductsByName(query: String): Flow<List<ProductEntity>>
 
@@ -57,12 +58,11 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE price BETWEEN :minPrice AND :maxPrice")
     fun filterProductsByPriceRange(minPrice: Double, maxPrice: Double): Flow<List<ProductEntity>>
 
-    // Обновление рейтинга продукта
     @Query("UPDATE products SET rating = :rating WHERE productId = :productId")
     suspend fun updateRating(productId: Long, rating: Float)
 
-    // Получение продукта с рекомендованными аксессуарами
     @Transaction
     @Query("SELECT * FROM products WHERE productId = :productId")
     fun getProductWithAccessoriesFlow(productId: Long): Flow<ProductWithAccessories>
 }
+

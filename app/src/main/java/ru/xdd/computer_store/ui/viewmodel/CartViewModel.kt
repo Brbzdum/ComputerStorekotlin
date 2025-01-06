@@ -3,12 +3,9 @@ package ru.xdd.computer_store.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import ru.xdd.computer_store.data.repository.StoreRepository
 import ru.xdd.computer_store.model.CartItemEntity
 import ru.xdd.computer_store.model.ProductEntity
@@ -19,7 +16,7 @@ class CartViewModel @Inject constructor(
     private val repository: StoreRepository
 ) : ViewModel() {
 
-    // Получаем текущего пользователя из SharedPreferences
+    // Получаем текущего пользователя
     private val currentUser = repository.getUser()
     private val userId: Long = currentUser.first // ID текущего пользователя
 
@@ -32,46 +29,91 @@ class CartViewModel @Inject constructor(
         false
     )
 
-    // Поток элементов корзины для текущего пользователя
-    val cartItems: StateFlow<List<CartItemEntity>> = repository.getCartItemsForUserFlow(userId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    // Список всех продуктов
-    private val allProducts: StateFlow<List<ProductEntity>> = repository.getAllProductsFlow()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // Поток элементов корзины
+    val cartItems: StateFlow<List<CartItemEntity>> = flow {
+        if (isUserLoggedIn.value) {
+            // Корзина авторизованного пользователя
+            emitAll(repository.getCartItemsForUserFlow(userId))
+        } else {
+            // Корзина гостя
+            val guestCart = repository.getGuestCartItems()
+            val allProducts = repository.getAllProductsFlow().first()
+            val guestCartItems = guestCart.mapNotNull { (productId, quantity) ->
+                allProducts.find { it.productId == productId }?.let {
+                    CartItemEntity(
+                        cartItemId = productId,
+                        userId = -1L, // ID гостя
+                        productId = productId,
+                        quantity = quantity
+                    )
+                }
+            }
+            emit(guestCartItems)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Общая стоимость корзины
-    val totalAmount = cartItems.map { items ->
+    val totalAmount: StateFlow<Double> = cartItems.map { items ->
         items.sumOf { cartItem ->
-            val product = allProducts.value.find { it.productId == cartItem.productId }
-            (product?.price ?: 0.0) * cartItem.quantity
+            repository.getAllProductsFlow().first().find { it.productId == cartItem.productId }?.price?.times(cartItem.quantity)
+                ?: 0.0
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     // Удаление товара из корзины
     fun removeItemFromCart(cartItemId: Long) {
-        viewModelScope.launch {
-            repository.removeItemFromCart(cartItemId)
+        if (isUserLoggedIn.value) {
+            viewModelScope.launch {
+                repository.removeItemFromCart(cartItemId)
+            }
+        } else {
+            repository.removeGuestCartItem(cartItemId)
         }
     }
 
-    // Обновление количества товара
-    fun updateCartItemQuantity(cartItemId: Long, quantity: Long) {
-        viewModelScope.launch {
-            repository.updateCartItemQuantity(cartItemId, quantity)
+    // Очистка корзины
+    fun clearCart() {
+        if (isUserLoggedIn.value) {
+            viewModelScope.launch {
+                repository.clearUserCart(userId)
+            }
+        } else {
+            repository.clearGuestCart()
+        }
+    }
+
+    // Удаление товара по ID (используется в UI)
+    fun removeFromCart(cartItemId: Long, productId: Long) {
+        if (isUserLoggedIn.value) {
+            viewModelScope.launch {
+                repository.removeItemFromCart(cartItemId)
+            }
+        } else {
+            repository.removeGuestCartItem(productId)
         }
     }
 
     // Получение продукта по ID
     fun getProductById(productId: Long): ProductEntity? {
-        return allProducts.value.find { it.productId == productId }
-    }
-    fun clearCart() {
-        viewModelScope.launch {
-            repository.clearUserCart(userId)
+        return runBlocking {
+            repository.getAllProductsFlow().first().find { it.productId == productId }
         }
     }
 
+    // Обновление количества товара в корзине
+    fun updateCartItemQuantity(cartItemId: Long, quantity: Long) {
+        if (isUserLoggedIn.value) {
+            viewModelScope.launch {
+                repository.updateCartItemQuantity(cartItemId, quantity)
+            }
+        } else {
+            val guestCart = repository.getGuestCartItems().toMutableMap()
+            if (quantity > 0) {
+                guestCart[cartItemId] = quantity
+            } else {
+                guestCart.remove(cartItemId)
+            }
+            repository.updateGuestCartItems(guestCart)
+        }
+    }
 }
-
-

@@ -1,4 +1,3 @@
-// ReviewsViewModel.kt
 package ru.xdd.computer_store.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -26,22 +25,15 @@ class ReviewsViewModel @Inject constructor(
         _errorMessage.value = null
     }
 
-    suspend fun canLeaveReview(userId: Long, productId: Long): Boolean {
-        return repository.hasCompletedOrderForProduct(userId, productId)
-    }
-
     fun addReview(userId: Long, productId: Long, rating: Int, comment: String) {
         viewModelScope.launch {
             try {
-                if (canLeaveReview(userId, productId)) {
-                    repository.addReview(userId, productId, rating, comment)
-                } else {
-                    _errorMessage.value = "Вы не можете оставить отзыв, так как товар еще не прибыл."
-                }
-            } catch (e: Exception) {
+                repository.addReview(userId, productId, rating, comment)
+            } catch (e: IllegalArgumentException) {
                 _errorMessage.value = e.message
+            } catch (e: Exception) {
+                _errorMessage.value = "Произошла ошибка при добавлении отзыва."
             }
         }
     }
 }
-

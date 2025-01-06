@@ -4,9 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,21 +20,27 @@ import ru.xdd.computer_store.ui.viewmodel.admin.AdminViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminProductScreen(
-    viewModel: AdminViewModel = hiltViewModel(),
-    navController: NavController
+    navController: NavController,
+    viewModel: AdminViewModel = hiltViewModel()
 ) {
     val products by viewModel.products.collectAsState()
+    val selectedProductAccessories by viewModel.selectedProductAccessories.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Показываем Snackbar для ошибок
+    var selectedProductId by remember { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(selectedProductId) {
+        selectedProductId?.let { viewModel.loadAccessoriesForProduct(it) }
+    }
+
     LaunchedEffect(errorMessage) {
-        errorMessage?.let {
+        errorMessage?.let { message ->
             coroutineScope.launch {
-                snackbarHostState.showSnackbar(it)
-                viewModel.resetError() // Сбрасываем ошибку
+                snackbarHostState.showSnackbar(message)
+                viewModel.resetError()
             }
         }
     }
@@ -44,34 +49,68 @@ fun AdminProductScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Управление продуктами") }
+                title = { Text("Управление продуктами") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                    }
+                }
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("addProduct") }) {
+            FloatingActionButton(onClick = {
+                navController.navigate("addProduct")
+            }) {
                 Icon(Icons.Default.Add, contentDescription = "Добавить продукт")
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(padding)
                 .padding(16.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier.weight(1f)
-            ) {
+            LazyColumn {
                 items(products) { product ->
-                    AdminProductListItem(
+                    ProductRow(
                         product = product,
-                        onEdit = {
-                            navController.navigate("editProduct/${product.productId}")
-                        },
-                        onDelete = {
-                            viewModel.deleteProduct(product.productId)
+                        onEdit = { navController.navigate("editProduct/${product.productId}") },
+                        onDelete = { viewModel.deleteProduct(product.productId) },
+                        onSelect = {
+                            selectedProductId = product.productId
                         }
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            selectedProductId?.let { productId ->
+                Text("Аксессуары для продукта $productId", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (selectedProductAccessories.isEmpty()) {
+                    Text("Нет добавленных аксессуаров.", style = MaterialTheme.typography.bodyLarge)
+                } else {
+                    LazyColumn {
+                        items(selectedProductAccessories) { accessory ->
+                            AccessoryRow(
+                                accessory = accessory,
+                                onRemove = {
+                                    viewModel.removeAccessory(productId, accessory.productId)
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { navController.navigate("addAccessory/$productId") },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Добавить аксессуар")
                 }
             }
         }
@@ -79,32 +118,56 @@ fun AdminProductScreen(
 }
 
 @Composable
-fun AdminProductListItem(
+fun ProductRow(
     product: ProductEntity,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onSelect: () -> Unit
 ) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = "Название: ${product.name}", style = MaterialTheme.typography.bodyLarge)
+                Text(text = "Категория: ${product.category}", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Цена: ${product.price} ₽", style = MaterialTheme.typography.bodySmall)
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Button(onClick = onEdit) { Text("Редактировать") }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onDelete) { Text("Удалить") }
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onSelect) { Text("Аксессуары") }
+            }
+        }
+    }
+}
+
+@Composable
+fun AccessoryRow(accessory: ProductEntity, onRemove: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = product.name,
-                style = MaterialTheme.typography.bodyLarge
-            )
-            Text(
-                text = "Цена: ${product.price} ₽",
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Text(text = accessory.name, style = MaterialTheme.typography.bodyLarge)
+            Text(text = "Категория: ${accessory.category}", style = MaterialTheme.typography.bodyMedium)
+            Text(text = "Цена: ${accessory.price} ₽", style = MaterialTheme.typography.bodySmall)
         }
-        IconButton(onClick = onEdit) {
-            Icon(Icons.Default.Edit, contentDescription = "Редактировать продукт")
-        }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = "Удалить продукт")
+        Button(onClick = onRemove) {
+            Text("Удалить")
         }
     }
 }

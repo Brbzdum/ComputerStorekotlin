@@ -21,21 +21,24 @@ fun ProfileScreen(
     navController: NavController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val user by viewModel.user.collectAsState(initial = null)
-    val orders by viewModel.orders.collectAsState(initial = emptyList())
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val userRole by viewModel.userRole.collectAsState()
+    val orders by viewModel.orders.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Профиль") },
                 actions = {
-                    IconButton(onClick = {
-                        viewModel.logout()
-                        navController.navigate("login") {
-                            popUpTo("main_products") { inclusive = true }
+                    if (isLoggedIn) {
+                        IconButton(onClick = {
+                            viewModel.logout()
+                            navController.navigate("main_products") {
+                                popUpTo("main_products") { inclusive = true }
+                            }
+                        }) {
+                            Text("Выход")
                         }
-                    }) {
-                        Text("Выход")
                     }
                 }
             )
@@ -48,20 +51,26 @@ fun ProfileScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            user?.let {
-                Text("Имя пользователя: ${it.username}", style = MaterialTheme.typography.titleLarge)
-                Text("Email: ${it.email}", style = MaterialTheme.typography.bodyLarge)
+            if (isLoggedIn) {
+                Text("Добро пожаловать, ${userRole?.name ?: "Пользователь"}!", style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text("Ваши заказы:", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                LazyColumn {
-                    items(orders) { order ->
-                        OrderItem(orderId = order.orderId, totalAmount = order.totalAmount)
+
+                if (orders.isEmpty()) {
+                    Text("У вас нет заказов.", style = MaterialTheme.typography.bodyLarge)
+                } else {
+                    LazyColumn {
+                        items(orders) { order ->
+                            OrderItem(orderId = order.orderId, totalAmount = order.totalAmount)
+                        }
                     }
                 }
-            } ?: run {
+            } else {
                 Text("Вы не авторизованы", style = MaterialTheme.typography.bodyLarge)
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Button(
                     onClick = { navController.navigate("login") },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
