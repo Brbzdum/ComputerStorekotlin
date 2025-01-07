@@ -22,7 +22,7 @@ import ru.xdd.computer_store.utils.PasswordHasher
         OrderItemEntity::class,
         ProductAccessoryCrossRef::class
     ],
-    version = 6,
+    version = 7 ,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -92,7 +92,6 @@ abstract class AppDatabase : RoomDatabase() {
                         role = Role.ADMIN
                     )
                 )
-                Log.d("DatabaseCallback", "Admin user inserted")
             }
 
             if (userDao.getUserByUsername("user1") == null) {
@@ -104,14 +103,12 @@ abstract class AppDatabase : RoomDatabase() {
                         role = Role.USER
                     )
                 )
-                Log.d("DatabaseCallback", "User1 inserted")
             }
 
             // Проверка существования продуктов
             val existingProducts = productDao.getAllProductsFlow().first()
-            Log.d("DatabaseCallback", "Existing products count: ${existingProducts.size}")
             if (existingProducts.isEmpty()) {
-                val productId1 = productDao.insertProduct(
+                val product1 = productDao.insertProduct(
                     ProductEntity(
                         name = "Ноутбук Lenovo",
                         description = "Высокопроизводительный ноутбук для работы и учебы.",
@@ -123,7 +120,8 @@ abstract class AppDatabase : RoomDatabase() {
                         parentProductId = null
                     )
                 )
-                val productId2 = productDao.insertProduct(
+
+                val product2 = productDao.insertProduct(
                     ProductEntity(
                         name = "Мышь Logitech",
                         description = "Эргономичная мышь с высокой точностью.",
@@ -135,7 +133,8 @@ abstract class AppDatabase : RoomDatabase() {
                         parentProductId = null
                     )
                 )
-                val productId3 = productDao.insertProduct(
+
+                val product3 = productDao.insertProduct(
                     ProductEntity(
                         name = "Монитор Samsung",
                         description = "HD монитор с высоким качеством изображения.",
@@ -148,35 +147,81 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 )
 
-                // Добавление аксессуаров к продуктам
-                productDao.addAccessoryToProduct(productId1, productId2)
-                productDao.addAccessoryToProduct(productId1, productId3)
+                // Новые товары
+                val product4 = productDao.insertProduct(
+                    ProductEntity(
+                        name = "Клавиатура Razer",
+                        description = "Игровая клавиатура с подсветкой RGB.",
+                        category = "Аксессуары",
+                        price = 4500.0,
+                        stock = 30,
+                        rating = 4.6f,
+                        imageUrl = "https://example.com/keyboard.jpg",
+                        parentProductId = null
+                    )
+                )
 
-                Log.d("DatabaseCallback", "Products and accessories inserted")
+                val product5 = productDao.insertProduct(
+                    ProductEntity(
+                        name = "SSD Kingston",
+                        description = "Надежный SSD накопитель для вашего ПК.",
+                        category = "Накопители",
+                        price = 3000.0,
+                        stock = 40,
+                        rating = 4.9f,
+                        imageUrl = "https://example.com/ssd.jpg",
+                        parentProductId = null
+                    )
+                )
 
-                // Добавление отзывов
+                val product6 = productDao.insertProduct(
+                    ProductEntity(
+                        name = "Наушники Sony",
+                        description = "Качественные наушники с шумоподавлением.",
+                        category = "Аудио",
+                        price = 7000.0,
+                        stock = 15,
+                        rating = 4.7f,
+                        imageUrl = "https://example.com/headphones.jpg",
+                        parentProductId = null
+                    )
+                )
+
+                // Добавляем аксессуары к продуктам
+                productDao.addAccessoryToProduct(product1, product2)
+                productDao.addAccessoryToProduct(product1, product3)
+                productDao.addAccessoryToProduct(product3, product4)
+
+                // Отзывы
                 val user1 = userDao.getUserByUsername("user1")
                 user1?.let { user ->
                     reviewDao.insertReview(
                         ReviewEntity(
                             userId = user.userId,
-                            productId = productId1,
+                            productId = product1,
                             rating = 5,
                             comment = "Отличный ноутбук!",
                             createdAt = System.currentTimeMillis()
                         )
                     )
+                    reviewDao.insertReview(
+                        ReviewEntity(
+                            userId = user.userId,
+                            productId = product6,
+                            rating = 4,
+                            comment = "Хорошие наушники, но могли бы быть дешевле.",
+                            createdAt = System.currentTimeMillis()
+                        )
+                    )
                 }
 
-                Log.d("DatabaseCallback", "Reviews inserted")
-
-                // Добавление заказов
+                // Пример заказа
                 val orderId = orderDao.insertOrder(
                     OrderEntity(
                         userId = user1?.userId ?: 0,
                         orderDate = System.currentTimeMillis(),
                         orderStatus = OrderStatus.ЗАВЕРШЁН,
-                        totalAmount = 55000.0,
+                        totalAmount = 62000.0,
                         shippingAddress = "Москва, Красная площадь, д.1"
                     )
                 )
@@ -184,14 +229,21 @@ abstract class AppDatabase : RoomDatabase() {
                     listOf(
                         OrderItemEntity(
                             orderId = orderId,
-                            productId = productId1,
+                            productId = product1,
                             quantity = 1,
                             priceAtOrderTime = 55000.0
+                        ),
+                        OrderItemEntity(
+                            orderId = orderId,
+                            productId = product2,
+                            quantity = 2,
+                            priceAtOrderTime = 1500.0
                         )
                     )
                 )
-                Log.d("DatabaseCallback", "Orders and order items inserted")
             }
         }
     }
+
+
 }

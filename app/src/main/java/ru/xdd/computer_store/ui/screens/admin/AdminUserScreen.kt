@@ -29,6 +29,10 @@ fun AdminUserScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    // Переменные для управления состоянием диалога
+    var isEditDialogOpen by remember { mutableStateOf(false) }
+    var selectedUser by remember { mutableStateOf<UserEntity?>(null) }
+
     LaunchedEffect(errorMessage) {
         errorMessage?.let {
             coroutineScope.launch {
@@ -44,7 +48,7 @@ fun AdminUserScreen(
             TopAppBar(title = { Text("Управление пользователями") })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("addUser") }) {
+            FloatingActionButton(onClick = { /* Логика добавления пользователя */ }) {
                 Icon(Icons.Default.Add, contentDescription = "Добавить пользователя")
             }
         }
@@ -68,7 +72,10 @@ fun AdminUserScreen(
                     items(users) { user ->
                         UserRow(
                             user = user,
-                            onEdit = { navController.navigate("editUser/${user.userId}") },
+                            onEdit = {
+                                selectedUser = user
+                                isEditDialogOpen = true
+                            },
                             onDelete = { viewModel.deleteUser(user.userId) }
                         )
                         HorizontalDivider()
@@ -76,7 +83,63 @@ fun AdminUserScreen(
                 }
             }
         }
+
+        // Диалог редактирования пользователя
+        if (isEditDialogOpen) {
+            EditUserDialog(
+                user = selectedUser,
+                onDismiss = { isEditDialogOpen = false },
+                onSave = { updatedUser ->
+                    viewModel.updateUser(updatedUser)
+                    isEditDialogOpen = false
+                }
+            )
+        }
     }
+}
+
+@Composable
+fun EditUserDialog(
+    user: UserEntity?,
+    onDismiss: () -> Unit,
+    onSave: (UserEntity) -> Unit
+) {
+    var username by remember { mutableStateOf(user?.username ?: "") }
+    var email by remember { mutableStateOf(user?.email ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Редактировать пользователя") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Имя пользователя") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") }
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                if (user != null) {
+                    onSave(user.copy(username = username, email = email))
+                }
+            }) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
 }
 
 @Composable
@@ -91,7 +154,6 @@ fun UserRow(user: UserEntity, onEdit: () -> Unit, onDelete: () -> Unit) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = "Имя: ${user.username}", style = MaterialTheme.typography.bodyLarge)
             Text(text = "Email: ${user.email}", style = MaterialTheme.typography.bodyMedium)
-            Text(text = "Роль: ${user.role.name}", style = MaterialTheme.typography.bodySmall)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = onEdit) {
@@ -106,3 +168,4 @@ fun UserRow(user: UserEntity, onEdit: () -> Unit, onDelete: () -> Unit) {
         }
     }
 }
+

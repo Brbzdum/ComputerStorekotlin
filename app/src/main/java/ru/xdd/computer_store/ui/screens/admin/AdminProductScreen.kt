@@ -1,13 +1,39 @@
 package ru.xdd.computer_store.ui.screens.admin
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,7 +46,6 @@ import ru.xdd.computer_store.ui.viewmodel.admin.AdminViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminProductScreen(
-
     navController: NavController,
     viewModel: AdminViewModel = hiltViewModel()
 ) {
@@ -31,16 +56,19 @@ fun AdminProductScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    var selectedProductId by remember { mutableStateOf<Long?>(null) }
+    var isEditDialogOpen by remember { mutableStateOf(false) }
+    var isAddDialogOpen by remember { mutableStateOf(false) }
+    var isAddAccessoryDialogOpen by remember { mutableStateOf(false) }
+    var selectedProduct by remember { mutableStateOf<ProductEntity?>(null) }
 
-    LaunchedEffect(selectedProductId) {
-        selectedProductId?.let { viewModel.loadAccessoriesForProduct(it) }
+    LaunchedEffect(selectedProduct) {
+        selectedProduct?.let { viewModel.loadAccessoriesForProduct(it.productId) }
     }
 
     LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
+        errorMessage?.let {
             coroutineScope.launch {
-                snackbarHostState.showSnackbar(message)
+                snackbarHostState.showSnackbar(it)
                 viewModel.resetError()
             }
         }
@@ -49,19 +77,10 @@ fun AdminProductScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Управление продуктами") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
-                    }
-                }
-            )
+            TopAppBar(title = { Text("Управление продуктами") })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                navController.navigate("addProduct")
-            }) {
+            FloatingActionButton(onClick = { isAddDialogOpen = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Добавить продукт")
             }
         }
@@ -76,10 +95,14 @@ fun AdminProductScreen(
                 items(products) { product ->
                     ProductRow(
                         product = product,
-                        onEdit = { navController.navigate("editProduct/${product.productId}") },
+                        onEdit = {
+                            selectedProduct = product
+                            isEditDialogOpen = true
+                        },
                         onDelete = { viewModel.deleteProduct(product.productId) },
-                        onSelect = {
-                            selectedProductId = product.productId
+                        onAddAccessory = {
+                            selectedProduct = product
+                            isAddAccessoryDialogOpen = true
                         }
                     )
                 }
@@ -87,33 +110,53 @@ fun AdminProductScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            selectedProductId?.let { productId ->
-                Text("Аксессуары для продукта $productId", style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-
-                if (selectedProductAccessories.isEmpty()) {
-                    Text("Нет добавленных аксессуаров.", style = MaterialTheme.typography.bodyLarge)
-                } else {
-                    LazyColumn {
-                        items(selectedProductAccessories) { accessory ->
-                            AccessoryRow(
-                                accessory = accessory,
-                                onRemove = {
-                                    viewModel.removeAccessory(productId, accessory.productId)
-                                }
-                            )
-                        }
+            selectedProduct?.let { product ->
+                Text("Аксессуары для: ${product.name}", style = MaterialTheme.typography.titleMedium)
+                LazyColumn {
+                    items(selectedProductAccessories) { accessory ->
+                        AccessoryRow(
+                            accessory = accessory,
+                            onRemove = { viewModel.removeAccessory(product.productId, accessory.productId) }
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { navController.navigate("addAccessory/$productId") },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text("Добавить аксессуар")
-                }
             }
+        }
+
+        // Диалог редактирования продукта
+        if (isEditDialogOpen) {
+            EditProductDialog(
+                product = selectedProduct,
+                onDismiss = { isEditDialogOpen = false },
+                onSave = { updatedProduct ->
+                    viewModel.updateProduct(updatedProduct)
+                    isEditDialogOpen = false
+                }
+            )
+        }
+
+        // Диалог добавления нового продукта
+        if (isAddDialogOpen) {
+            AddProductDialog(
+                onDismiss = { isAddDialogOpen = false },
+                onSave = { newProduct ->
+                    viewModel.addProduct(newProduct)
+                    isAddDialogOpen = false
+                }
+            )
+        }
+
+        // Диалог добавления аксессуара
+        if (isAddAccessoryDialogOpen) {
+            AddAccessoryDialog(
+                onDismiss = { isAddAccessoryDialogOpen = false },
+                onSave = { accessoryId ->
+                    selectedProduct?.let { product ->
+                        viewModel.addAccessory(product.productId, accessoryId)
+                    }
+                    isAddAccessoryDialogOpen = false
+                }
+            )
         }
     }
 }
@@ -123,7 +166,7 @@ fun ProductRow(
     product: ProductEntity,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    onSelect: () -> Unit
+    onAddAccessory: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -144,15 +187,154 @@ fun ProductRow(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Button(onClick = onEdit) { Text("Редактировать") }
-                Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = onDelete) { Text("Удалить") }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = onSelect) { Text("Аксессуары") }
+                Button(onClick = onAddAccessory) { Text("Аксессуары") }
             }
         }
     }
 }
 
+@Composable
+fun AddAccessoryDialog(
+    onDismiss: () -> Unit,
+    onSave: (Long) -> Unit
+) {
+    var accessoryId by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Добавить аксессуар") },
+        text = {
+            OutlinedTextField(
+                value = accessoryId,
+                onValueChange = { accessoryId = it },
+                label = { Text("ID Аксессуара") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Button(onClick = {
+                accessoryId.toLongOrNull()?.let(onSave)
+            }) {
+                Text("Добавить")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
+}
+@Composable
+fun AddProductDialog(
+    onDismiss: () -> Unit,
+    onSave: (ProductEntity) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
+    var price by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Добавить продукт") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Название") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Категория") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = price,
+                    onValueChange = { price = it },
+                    label = { Text("Цена") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onSave(
+                    ProductEntity(
+                        productId = 0, // Новый ID будет сгенерирован в БД
+                        name = name,
+                        category = category,
+                        price = price.toDoubleOrNull() ?: 0.0,
+                        stock = 0, // По умолчанию
+                        rating = 0.0f,
+                        imageUrl = "" // Может быть пустым
+                    )
+                )
+            }) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
+}
+@Composable
+fun EditProductDialog(
+    product: ProductEntity?,
+    onDismiss: () -> Unit,
+    onSave: (ProductEntity) -> Unit
+) {
+    var name by remember { mutableStateOf(product?.name ?: "") }
+    var category by remember { mutableStateOf(product?.category ?: "") }
+    var price by remember { mutableStateOf(product?.price?.toString() ?: "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Редактировать продукт") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Название") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = category,
+                    onValueChange = { category = it },
+                    label = { Text("Категория") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = price,
+                    onValueChange = { price = it },
+                    label = { Text("Цена") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                if (product != null) {
+                    onSave(product.copy(name = name, category = category, price = price.toDoubleOrNull() ?: 0.0))
+                }
+            }) {
+                Text("Сохранить")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
+}
 @Composable
 fun AccessoryRow(accessory: ProductEntity, onRemove: () -> Unit) {
     Row(
@@ -172,3 +354,5 @@ fun AccessoryRow(accessory: ProductEntity, onRemove: () -> Unit) {
         }
     }
 }
+
+

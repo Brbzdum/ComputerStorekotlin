@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
             // Проверка существования продуктов
             val existingProducts = productDao.getAllProductsFlow().first()
             if (existingProducts.isEmpty()) {
-                val productId1 = productDao.insertProduct(
+                val product1 = productDao.insertProduct(
                     ProductEntity(
                         name = "Ноутбук Lenovo",
                         description = "Высокопроизводительный ноутбук для работы и учебы.",
@@ -100,7 +100,8 @@ class MainActivity : ComponentActivity() {
                         parentProductId = null
                     )
                 )
-                val productId2 = productDao.insertProduct(
+
+                val product2 = productDao.insertProduct(
                     ProductEntity(
                         name = "Мышь Logitech",
                         description = "Эргономичная мышь с высокой точностью.",
@@ -112,7 +113,8 @@ class MainActivity : ComponentActivity() {
                         parentProductId = null
                     )
                 )
-                val productId3 = productDao.insertProduct(
+
+                val product3 = productDao.insertProduct(
                     ProductEntity(
                         name = "Монитор Samsung",
                         description = "HD монитор с высоким качеством изображения.",
@@ -125,28 +127,81 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
-                productDao.addAccessoryToProduct(productId1, productId2)
-                productDao.addAccessoryToProduct(productId1, productId3)
+                // Новые товары
+                val product4 = productDao.insertProduct(
+                    ProductEntity(
+                        name = "Клавиатура Razer",
+                        description = "Игровая клавиатура с подсветкой RGB.",
+                        category = "Аксессуары",
+                        price = 4500.0,
+                        stock = 30,
+                        rating = 4.6f,
+                        imageUrl = "https://static.razer.ru/public/zNkw6qaHWUwkskJHn2GcsN/800x600-razer-deathstalker-v2-pro-product-promo.png",
+                        parentProductId = null
+                    )
+                )
 
+                val product5 = productDao.insertProduct(
+                    ProductEntity(
+                        name = "SSD Kingston",
+                        description = "Надежный SSD накопитель для вашего ПК.",
+                        category = "Аксессуары",
+                        price = 3000.0,
+                        stock = 40,
+                        rating = 4.9f,
+                        imageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgY8y9bi57wGbP1kguRA_IUwYTaDw9jv75XQ&s",
+                        parentProductId = null
+                    )
+                )
+
+                val product6 = productDao.insertProduct(
+                    ProductEntity(
+                        name = "Наушники Sony",
+                        description = "Качественные наушники с шумоподавлением.",
+                        category = "Аксессуары",
+                        price = 7000.0,
+                        stock = 15,
+                        rating = 4.7f,
+                        imageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQdNxBWSAzTJcIBOrm7iL69S_gZmD-P13vJbw&s",
+                        parentProductId = null
+                    )
+                )
+
+                // Добавляем аксессуары к продуктам
+                productDao.addAccessoryToProduct(product1, product2)
+                productDao.addAccessoryToProduct(product1, product3)
+                productDao.addAccessoryToProduct(product3, product4)
+
+                // Отзывы
                 val user1 = userDao.getUserByUsername("user1")
                 user1?.let { user ->
                     reviewDao.insertReview(
                         ReviewEntity(
                             userId = user.userId,
-                            productId = productId1,
+                            productId = product1,
                             rating = 5,
                             comment = "Отличный ноутбук!",
                             createdAt = System.currentTimeMillis()
                         )
                     )
+                    reviewDao.insertReview(
+                        ReviewEntity(
+                            userId = user.userId,
+                            productId = product6,
+                            rating = 4,
+                            comment = "Хорошие наушники, но могли бы быть дешевле.",
+                            createdAt = System.currentTimeMillis()
+                        )
+                    )
                 }
 
+                // Пример заказа
                 val orderId = orderDao.insertOrder(
                     OrderEntity(
                         userId = user1?.userId ?: 0,
                         orderDate = System.currentTimeMillis(),
                         orderStatus = OrderStatus.ЗАВЕРШЁН,
-                        totalAmount = 55000.0,
+                        totalAmount = 62000.0,
                         shippingAddress = "Москва, Красная площадь, д.1"
                     )
                 )
@@ -154,15 +209,22 @@ class MainActivity : ComponentActivity() {
                     listOf(
                         OrderItemEntity(
                             orderId = orderId,
-                            productId = productId1,
+                            productId = product1,
                             quantity = 1,
                             priceAtOrderTime = 55000.0
+                        ),
+                        OrderItemEntity(
+                            orderId = orderId,
+                            productId = product2,
+                            quantity = 2,
+                            priceAtOrderTime = 1500.0
                         )
                     )
                 )
             }
         }
     }
+
 
     private fun getUserIdFromPreferencesOrDefault(): Long {
         val sharedPreferences = getSharedPreferences("app_prefs", MODE_PRIVATE)
