@@ -52,11 +52,8 @@ fun ProductDetailScreen(
 
                 Button(
                     onClick = {
-                        if (userId == -1L) {
-                            navController.navigate("login")
-                        } else {
-                            viewModel.addToCart(details.product.productId, userId)
-                        }
+                        viewModel.addToCart(details.product.productId, userId)
+
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

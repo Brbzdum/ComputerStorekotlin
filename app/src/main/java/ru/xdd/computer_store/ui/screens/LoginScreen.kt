@@ -58,7 +58,7 @@ fun LoginScreen(
         }
         Spacer(modifier = Modifier.height(8.dp))
         TextButton(
-            onClick = { navController.navigate("register?redirect=$redirect") },
+            onClick = { navController.navigate("registration_screen?redirect=$redirect") },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Регистрация")

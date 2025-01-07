@@ -234,6 +234,9 @@ fun AddProductDialog(
     var name by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var parentProductId by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -258,19 +261,39 @@ fun AddProductDialog(
                     label = { Text("Цена") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = imageUrl,
+                    onValueChange = { imageUrl = it },
+                    label = { Text("Ссылка на изображение") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Описание") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = parentProductId,
+                    onValueChange = { parentProductId = it },
+                    label = { Text("ID Родительского продукта (опционально)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
             Button(onClick = {
                 onSave(
                     ProductEntity(
-                        productId = 0, // Новый ID будет сгенерирован в БД
+                        productId = 0,
                         name = name,
                         category = category,
                         price = price.toDoubleOrNull() ?: 0.0,
-                        stock = 0, // По умолчанию
+                        stock = 0,
                         rating = 0.0f,
-                        imageUrl = "" // Может быть пустым
+                        imageUrl = imageUrl,
+                        description = description,
+                        parentProductId = parentProductId.toLongOrNull()
                     )
                 )
             }) {
@@ -284,6 +307,8 @@ fun AddProductDialog(
         }
     )
 }
+
+
 @Composable
 fun EditProductDialog(
     product: ProductEntity?,
@@ -293,6 +318,9 @@ fun EditProductDialog(
     var name by remember { mutableStateOf(product?.name ?: "") }
     var category by remember { mutableStateOf(product?.category ?: "") }
     var price by remember { mutableStateOf(product?.price?.toString() ?: "") }
+    var imageUrl by remember { mutableStateOf(product?.imageUrl ?: "") }
+    var description by remember { mutableStateOf(product?.description ?: "") }
+    var parentProductId by remember { mutableStateOf(product?.parentProductId?.toString() ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -317,12 +345,39 @@ fun EditProductDialog(
                     label = { Text("Цена") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = imageUrl,
+                    onValueChange = { imageUrl = it },
+                    label = { Text("Ссылка на изображение") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Описание") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = parentProductId,
+                    onValueChange = { parentProductId = it },
+                    label = { Text("ID Родительского продукта (опционально)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
             Button(onClick = {
                 if (product != null) {
-                    onSave(product.copy(name = name, category = category, price = price.toDoubleOrNull() ?: 0.0))
+                    onSave(
+                        product.copy(
+                            name = name,
+                            category = category,
+                            price = price.toDoubleOrNull() ?: 0.0,
+                            imageUrl = imageUrl,
+                            description = description,
+                            parentProductId = parentProductId.toLongOrNull()
+                        )
+                    )
                 }
             }) {
                 Text("Сохранить")
@@ -335,6 +390,8 @@ fun EditProductDialog(
         }
     )
 }
+
+
 @Composable
 fun AccessoryRow(accessory: ProductEntity, onRemove: () -> Unit) {
     Row(

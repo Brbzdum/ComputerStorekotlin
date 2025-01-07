@@ -22,7 +22,7 @@ import ru.xdd.computer_store.utils.PasswordHasher
         OrderItemEntity::class,
         ProductAccessoryCrossRef::class
     ],
-    version = 7 ,
+    version = 8 ,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
