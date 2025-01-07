@@ -56,9 +56,9 @@ fun StoreNavGraph(
         }
 
         // Оформление заказа
-        composable("checkout") {
+        composable("checkout_screen") {
             if (userId == -1L) {
-                redirectToLogin(navController, "checkout")
+                redirectToLogin(navController, "checkout_screen")
             } else {
                 CheckoutScreen(
                     navController = navController,
@@ -74,13 +74,13 @@ fun StoreNavGraph(
         }
 
         // Регистрация
-        composable("register?redirect={redirect}") { backStackEntry ->
+        composable("registration_screen?redirect={redirect}") { backStackEntry ->
             val redirect = backStackEntry.arguments?.getString("redirect") ?: "main_products"
             RegistrationScreen(
                 navController = navController,
                 onRegistrationSuccess = {
                     navController.navigate(redirect) {
-                        popUpTo("register") { inclusive = true }
+                        popUpTo("registration_screen") { inclusive = true }
                     }
                 }
             )

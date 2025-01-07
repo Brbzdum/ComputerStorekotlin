@@ -67,9 +67,10 @@ class StoreRepository @Inject constructor(
     fun getUser(): Pair<Long, Role?> {
         val userId = sharedPreferences.getLong("user_id", -1L)
         val roleString = sharedPreferences.getString("user_role", null)
-        val role = roleString?.let { Role.valueOf(it) } // Конвертируем строку обратно в Role
+        val role = roleString?.let { try { Role.valueOf(it) } catch (e: Exception) { null } }
         return userId to role
     }
+
 
 
     /**

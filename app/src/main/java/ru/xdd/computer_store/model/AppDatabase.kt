@@ -22,7 +22,7 @@ import ru.xdd.computer_store.utils.PasswordHasher
         OrderItemEntity::class,
         ProductAccessoryCrossRef::class
     ],
-    version = 5, // Увеличена версия базы данных
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -44,8 +44,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "store.db"
                 )
-                    .fallbackToDestructiveMigration() // Разрешить пересоздание базы данных
-                    .addCallback(DatabaseCallback(scope)) // Подключаем Callback для заполнения данных
+                    .fallbackToDestructiveMigration()
+                    .addCallback(DatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
                 instance
@@ -59,8 +59,12 @@ abstract class AppDatabase : RoomDatabase() {
             Log.d("DatabaseCallback", "Database created")
             INSTANCE?.let { database ->
                 scope.launch(Dispatchers.IO) {
-                    initializeData(database)
-                    Log.d("DatabaseCallback", "Initial data inserted")
+                    try {
+                        initializeData(database)
+                        Log.d("DatabaseCallback", "Initial data inserted successfully")
+                    } catch (e: Exception) {
+                        Log.e("DatabaseCallback", "Error initializing database: ${e.message}", e)
+                    }
                 }
             }
         }
@@ -76,6 +80,8 @@ abstract class AppDatabase : RoomDatabase() {
             val reviewDao = database.reviewDao()
             val orderDao = database.orderDao()
 
+            Log.d("DatabaseCallback", "Starting data initialization")
+
             // Добавление пользователей
             if (userDao.getUserByUsername("admin") == null) {
                 userDao.insertUser(
@@ -86,6 +92,7 @@ abstract class AppDatabase : RoomDatabase() {
                         role = Role.ADMIN
                     )
                 )
+                Log.d("DatabaseCallback", "Admin user inserted")
             }
 
             if (userDao.getUserByUsername("user1") == null) {
@@ -97,10 +104,12 @@ abstract class AppDatabase : RoomDatabase() {
                         role = Role.USER
                     )
                 )
+                Log.d("DatabaseCallback", "User1 inserted")
             }
 
             // Проверка существования продуктов
             val existingProducts = productDao.getAllProductsFlow().first()
+            Log.d("DatabaseCallback", "Existing products count: ${existingProducts.size}")
             if (existingProducts.isEmpty()) {
                 val productId1 = productDao.insertProduct(
                     ProductEntity(
@@ -143,6 +152,8 @@ abstract class AppDatabase : RoomDatabase() {
                 productDao.addAccessoryToProduct(productId1, productId2)
                 productDao.addAccessoryToProduct(productId1, productId3)
 
+                Log.d("DatabaseCallback", "Products and accessories inserted")
+
                 // Добавление отзывов
                 val user1 = userDao.getUserByUsername("user1")
                 user1?.let { user ->
@@ -156,6 +167,8 @@ abstract class AppDatabase : RoomDatabase() {
                         )
                     )
                 }
+
+                Log.d("DatabaseCallback", "Reviews inserted")
 
                 // Добавление заказов
                 val orderId = orderDao.insertOrder(
@@ -177,6 +190,7 @@ abstract class AppDatabase : RoomDatabase() {
                         )
                     )
                 )
+                Log.d("DatabaseCallback", "Orders and order items inserted")
             }
         }
     }
