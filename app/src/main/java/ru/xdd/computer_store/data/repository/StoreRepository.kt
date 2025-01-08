@@ -255,6 +255,10 @@ class StoreRepository @Inject constructor(
 
     // --- Методы для работы с каталогом ---
 
+    fun getProductFlowById(productId: Long): Flow<ProductWithAccessories> {
+        return productDao.getProductWithAccessoriesFlow(productId)
+    }
+
     /**
      * Возвращает поток всех товаров в каталоге.
      * @return Поток списка товаров.
@@ -376,12 +380,14 @@ class StoreRepository @Inject constructor(
             addGuestCartItem(productId, quantity)
         } else {
             Log.d("CartDebug", "Adding to user cart: userId=$userId, productId=$productId, quantity=$quantity")
-            val product = productDao.getProductById(productId)
-            Log.d("CartDebug", "Product from DB: $product")
+
+            val product = productDao.getProductFlowById(productId).firstOrNull()
             if (product == null) throw IllegalArgumentException("Товар не найден")
             if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара на складе")
 
-            val cartItem = cartDao.getCartItemByUserIdAndProductId(userId, productId)
+            val cartItemFlow = cartDao.getCartItemByUserIdAndProductIdFlow(userId, productId)
+            val cartItem = cartItemFlow.firstOrNull()
+
             if (cartItem != null) {
                 cartDao.updateCartItemQuantity(cartItem.cartItemId, cartItem.quantity + quantity)
                 Log.d("CartDebug", "Updated cart item: $cartItem")
@@ -394,11 +400,10 @@ class StoreRepository @Inject constructor(
                 cartDao.insertCartItem(newCartItem)
                 Log.d("CartDebug", "Inserted new cart item: $newCartItem")
             }
-
-            // Принудительное обновление корзины
-
         }
     }
+
+
 
 
     /**
@@ -483,8 +488,7 @@ class StoreRepository @Inject constructor(
 
         // Обновляем остатки на складе
         items.forEach { (product, quantity) ->
-            val updatedProduct = product.copy(stock = product.stock - quantity)
-            productDao.updateProduct(updatedProduct)
+            productDao.updateProductStock(product.productId, quantity)
         }
 
         // Очищаем корзину пользователя
@@ -538,56 +542,45 @@ class StoreRepository @Inject constructor(
      * @return ID созданного заказа.
      * @throws IllegalArgumentException Если корзина пуста или в ней нет доступных товаров.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
-    suspend fun processOrderFromCart(userId: Long, shippingAddress: String): Long {
-        Log.d("OrderDebug", "Starting processOrderFromCart for userId=$userId")
 
-        val cartItemsFlow = cartDao.getCartItemsForUserFlow(userId)
+    suspend fun processOrderFromCart(userId: Long, shippingAddress: String): Long = withContext(Dispatchers.IO) {
+        try {
+            Log.d("OrderDebug", "processOrderFromCart started for user $userId")
+            val cartItems = cartDao.getCartItemsForUserFlow(userId).first()
+            Log.d("OrderDebug", "Cart items: $cartItems") // Логируем содержимое корзины
 
-        return withContext(Dispatchers.IO) { // Важно выполнять операции с БД в IO dispatcher
-            cartItemsFlow.flatMapConcat { cartItems -> // Используем flatMapConcat для обработки списка
-                Log.d("OrderDebug", "Fetched cart items: $cartItems")
-                if (cartItems.isEmpty()) {
-                    flowOf(Result.failure(IllegalArgumentException("Корзина пуста"))) // Возвращаем ошибку как Flow
-                } else {
-                    val products = productDao.getAllProductsFlow().firstOrNull() ?: emptyList()
-                    Log.d("OrderDebug", "Fetched products: $products")
+            if (cartItems.isEmpty()) throw IllegalArgumentException("Корзина пуста")
 
-                    val items = cartItems.mapNotNull { cartItem ->
-                        val product = products.find { it.productId == cartItem.productId }
-                        product?.let { it to cartItem.quantity.toInt() }
-                    }
+            val productIds = cartItems.map { it.productId }
+            Log.d("OrderDebug", "Product IDs: $productIds") // Логируем ID товаров
 
-                    if (items.isEmpty()) {
-                        flowOf(Result.failure(IllegalArgumentException("Нет доступных товаров для заказа")))
-                    } else {
-                        flow {
-                            val orderId = createOrder(userId, items, shippingAddress)
-                            emit(Result.success(orderId))
-                        }
-                    }
-                }
-            }.first().fold(
-                onSuccess = { orderId ->
-                    Log.d("OrderDebug", "Order created with ID: $orderId")
-                    clearUserCart(userId)
-                    Log.d("OrderDebug", "Cart cleared for userId=$userId")
-                    orderId
-                },
-                onFailure = { exception ->
-                    Log.e("OrderDebug", "Error creating order:", exception)
-                    throw exception // Пробрасываем исключение дальше
-                }
-            )
+            val products = productDao.getProductsByIds(productIds)
+            Log.d("OrderDebug", "Products: $products") // Логируем полученные товары
+
+            val items = cartItems.mapNotNull { cartItem ->
+                val product = products.find { it.productId == cartItem.productId }
+                product?.let { it to cartItem.quantity.toInt() }
+            }
+            Log.d("OrderDebug", "Items to order: $items")
+
+            if (items.isEmpty()) throw IllegalArgumentException("Нет доступных товаров для заказа")
+
+            val orderId = createOrder(userId, items, shippingAddress)
+            Log.d("OrderDebug", "Order ID: $orderId")
+            clearUserCart(userId)
+            Log.d("OrderDebug", "Cart cleared")
+            orderId
+        } catch (e: Exception) {
+            Log.e("OrderDebug", "Error processing order", e)
+            throw e
         }
     }
-
-    // Добавляем новый метод
-    suspend fun refreshCartItems(userId: Long) {
-        val cartItems = cartDao.getCartItems(userId) // Получение списка напрямую
-        // Если у вас используется StateFlow или аналогичный поток, обновите данные
-        Log.d("StoreRepository", "Refreshing cart items for userId=$userId: $cartItems")
+    suspend fun getProductsByIds(productIds: List<Long>): List<ProductEntity> {
+        return productDao.getProductsByIds(productIds)
     }
+
+
+
 
 
 

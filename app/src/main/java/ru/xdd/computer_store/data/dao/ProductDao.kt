@@ -23,7 +23,8 @@ interface ProductDao {
     fun getAllProductsFlow(): Flow<List<ProductEntity>>
 
     @Query("SELECT * FROM products WHERE productId = :productId")
-    suspend fun getProductById(productId: Long): ProductEntity?
+    fun getProductFlowById(productId: Long): Flow<ProductEntity>
+
 
     @Query("""
         SELECT p.*
@@ -64,5 +65,11 @@ interface ProductDao {
     @Transaction
     @Query("SELECT * FROM products WHERE productId = :productId")
     fun getProductWithAccessoriesFlow(productId: Long): Flow<ProductWithAccessories>
+
+    @Query("SELECT * FROM products WHERE productId IN (:productIds)")
+    suspend fun getProductsByIds(productIds: List<Long>): List<ProductEntity>
+
+    @Query("UPDATE products SET stock = stock - :quantity WHERE productId = :productId")
+    suspend fun updateProductStock(productId: Long, quantity: Int)
 }
 

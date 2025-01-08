@@ -59,11 +59,13 @@ fun CartScreen(
             } else {
                 LazyColumn {
                     items(cartItems) { cartItem ->
-                        val product = viewModel.getProductById(cartItem.productId)
+                        val productFlow = viewModel.getProductFlowById(cartItem.productId)
+                        val product by productFlow.collectAsState(initial = null)
+
                         if (product != null) {
                             CartItemCard(
                                 cartItem = cartItem,
-                                product = product,
+                                product = product!!,
                                 onRemove = { viewModel.removeFromCart(cartItem.cartItemId, cartItem.productId) },
                                 onUpdateQuantity = { cartItemId, quantity ->
                                     viewModel.updateCartItemQuantity(cartItemId, quantity)
@@ -72,6 +74,7 @@ fun CartScreen(
                         }
                     }
                 }
+
 
 
                 Spacer(modifier = Modifier.height(16.dp))

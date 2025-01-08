@@ -86,6 +86,9 @@ fun StoreNavGraph(
                 }
             )
         }
+        composable("orders_screen") {
+            OrdersScreen(navController = navController, userId = userId)
+        }
 
         // Админ: Главная панель
         composable("admin_dashboard") {

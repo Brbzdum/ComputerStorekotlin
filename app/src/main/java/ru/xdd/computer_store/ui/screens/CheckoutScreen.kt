@@ -1,5 +1,6 @@
 package ru.xdd.computer_store.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -70,7 +71,7 @@ fun CheckoutScreen(
                 onClick = {
                     coroutineScope.launch {
                         try {
-                            viewModel.placeOrder(userId, address)
+                            viewModel.placeOrder(address)
                             navController.navigate("orders_screen") // Переход на экран заказов
                         } catch (e: Exception) {
                             errorMessage = e.message ?: "Ошибка оформления заказа"
@@ -81,6 +82,7 @@ fun CheckoutScreen(
             ) {
                 Text("Подтвердить заказ")
             }
+
         }
     }
 }
