@@ -6,18 +6,13 @@ import androidx.room.Transaction
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapConcat
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 import ru.xdd.computer_store.data.dao.*
 import ru.xdd.computer_store.model.*
 import ru.xdd.computer_store.utils.GUEST_USER_ID
-
 import javax.inject.Inject
 
 /**
@@ -577,6 +572,13 @@ class StoreRepository @Inject constructor(
     }
     suspend fun getProductsByIds(productIds: List<Long>): List<ProductEntity> {
         return productDao.getProductsByIds(productIds)
+    }
+
+    fun getUserDetails(): Triple<Long, Role?, String?> {
+        val userId = sharedPreferences.getLong("userId", -1L)
+        val role = sharedPreferences.getString("role", null)?.let { Role.valueOf(it) }
+        val username = sharedPreferences.getString("username", null)
+        return Triple(userId, role, username)
     }
 
 

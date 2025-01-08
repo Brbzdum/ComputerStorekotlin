@@ -25,6 +25,29 @@ class ReviewsViewModel @Inject constructor(
         _errorMessage.value = null
     }
 
+    private val _userId = MutableStateFlow<Long>(-1L)
+    val userId: StateFlow<Long> = _userId.asStateFlow()
+
+    private val _isLoggedIn = MutableStateFlow(false)
+    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
+
+    init {
+        loadUser()
+    }
+
+    private fun loadUser() {
+        viewModelScope.launch {
+            val (userId, _) = repository.getUser()
+            if (userId != -1L) {
+                _userId.value = userId
+                _isLoggedIn.value = true
+            } else {
+                _userId.value = -1L
+                _isLoggedIn.value = false
+            }
+        }
+    }
+
     fun addReview(userId: Long, productId: Long, rating: Int, comment: String) {
         viewModelScope.launch {
             try {

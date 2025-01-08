@@ -104,7 +104,7 @@ fun ProfileScreen(
                 } else {
                     LazyColumn {
                         items(orders) { order ->
-                            OrderItem(orderId = order.orderId, totalAmount = order.totalAmount)
+                            OrderItem(orderId = order.orderId, totalAmount = order.totalAmount,orderStatus = order.orderStatus.name )
                         }
                     }
                 }
@@ -125,16 +125,50 @@ fun ProfileScreen(
 
 
 @Composable
-fun OrderItem(orderId: Long, totalAmount: Double) {
+fun OrderItem(orderId: Long, totalAmount: Double, orderStatus: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "ID Заказа: $orderId", style = MaterialTheme.typography.bodyLarge)
-            Text(text = "Сумма: $totalAmount ₽", style = MaterialTheme.typography.bodyMedium)
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = "Номер Заказа: $orderId",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Сумма: $totalAmount ₽",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val statusColor = when (orderStatus) {
+                "НОВЫЙ" -> MaterialTheme.colorScheme.secondary
+                "В_ПРОЦЕССЕ" -> MaterialTheme.colorScheme.tertiary
+                "ЗАВЕРШЁН" -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.error
+            }
+
+            Text(
+                text = "Статус: $orderStatus",
+                style = MaterialTheme.typography.bodyLarge,
+                color = statusColor
+            )
         }
     }
 }
+
+
+

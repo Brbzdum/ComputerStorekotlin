@@ -19,14 +19,14 @@ import ru.xdd.computer_store.ui.viewmodel.ReviewsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReviewsScreen(
-    userId: Long,
     productId: Long,
     navController: NavController,
     viewModel: ReviewsViewModel = hiltViewModel()
 ) {
     val reviews by viewModel.getReviewsForProduct(productId).collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-
+    val isLoggedIn by viewModel.isLoggedIn.collectAsState()
+    val userId by viewModel.userId.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -61,7 +61,8 @@ fun ReviewsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            if (userId == -1L) {
+            // Проверка авторизации пользователя
+            if (!isLoggedIn) {
                 Text("Авторизуйтесь, чтобы оставить отзыв.", style = MaterialTheme.typography.bodyLarge)
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
@@ -117,7 +118,7 @@ fun ReviewsScreen(
                 LazyColumn {
                     items(reviews) { review ->
                         ReviewItem(review = review)
-                        HorizontalDivider()
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
                     }
                 }
             }
@@ -128,15 +129,20 @@ fun ReviewsScreen(
 @SuppressLint("SimpleDateFormat")
 @Composable
 fun ReviewItem(review: ReviewEntity) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
         Text(text = "Пользователь ID: ${review.userId}", style = MaterialTheme.typography.bodyMedium)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = "Рейтинг: ${review.rating}", style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = review.comment, style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = "Дата: ${java.text.SimpleDateFormat("dd.MM.yyyy HH:mm").format(java.util.Date(review.createdAt))}", style = MaterialTheme.typography.bodySmall)
+        Text(
+            text = "Дата: ${java.text.SimpleDateFormat("dd.MM.yyyy HH:mm").format(java.util.Date(review.createdAt))}",
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }

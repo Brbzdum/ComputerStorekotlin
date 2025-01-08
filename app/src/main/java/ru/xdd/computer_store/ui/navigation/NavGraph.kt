@@ -12,6 +12,7 @@ fun StoreNavGraph(
     navController: NavHostController,
     userId: Long,
     userRole: String
+
 ) {
     NavHost(
         navController = navController,
@@ -39,7 +40,6 @@ fun StoreNavGraph(
             val productId = backStackEntry.arguments?.getString("productId")?.toLongOrNull()
             if (productId != null) {
                 ReviewsScreen(
-                    userId = userId,
                     productId = productId,
                     navController = navController
                 )

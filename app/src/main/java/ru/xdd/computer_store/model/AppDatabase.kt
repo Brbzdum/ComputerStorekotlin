@@ -156,7 +156,7 @@ abstract class AppDatabase : RoomDatabase() {
                         price = 4500.0,
                         stock = 30,
                         rating = 4.6f,
-                        imageUrl = "https://example.com/keyboard.jpg",
+                        imageUrl = "https://static.razer.ru/230822/800x600-razer-blackwidow-v3-pro-product-promo.png",
                         parentProductId = null
                     )
                 )
@@ -169,7 +169,7 @@ abstract class AppDatabase : RoomDatabase() {
                         price = 3000.0,
                         stock = 40,
                         rating = 4.9f,
-                        imageUrl = "https://example.com/ssd.jpg",
+                        imageUrl = "https://goughlui.com/wp-content/uploads/2020/08/2020072910537461.jpg",
                         parentProductId = null
                     )
                 )
@@ -182,7 +182,7 @@ abstract class AppDatabase : RoomDatabase() {
                         price = 7000.0,
                         stock = 15,
                         rating = 4.7f,
-                        imageUrl = "https://example.com/headphones.jpg",
+                        imageUrl = "https://www.sony.ru/image/bcef63d32b0270480b5371fb35cd3029?fmt=png-alpha&wid=660&hei=660",
                         parentProductId = null
                     )
                 )

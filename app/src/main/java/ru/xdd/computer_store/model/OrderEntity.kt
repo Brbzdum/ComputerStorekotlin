@@ -10,6 +10,13 @@ enum class OrderStatus {
     В_ПРОЦЕССЕ,
     ЗАВЕРШЁН
 }
+fun OrderStatus.toDisplayString(): String {
+    return when (this) {
+        OrderStatus.НОВЫЙ -> "Новый"
+        OrderStatus.В_ПРОЦЕССЕ -> "В процессе"
+        OrderStatus.ЗАВЕРШЁН -> "Завершён"
+    }
+}
 
 @Entity(
     tableName = "orders",
@@ -31,3 +38,5 @@ data class OrderEntity(
     val totalAmount: Double,
     val shippingAddress: String
 )
+
+
