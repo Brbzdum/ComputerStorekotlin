@@ -1,11 +1,19 @@
 package ru.xdd.computer_store.data.repository
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.room.Transaction
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withContext
 import ru.xdd.computer_store.data.dao.*
 import ru.xdd.computer_store.model.*
 import ru.xdd.computer_store.utils.GUEST_USER_ID
@@ -32,6 +40,7 @@ class StoreRepository @Inject constructor(
      * @param role Роль пользователя (например, "USER" или "ADMIN").
      */
     fun saveUser(userId: Long, role: Role) {
+        Log.d("UserDebug", "Saving user: userId=$userId, role=$role")
         sharedPreferences.edit().apply {
             putLong("user_id", userId)
             putString("user_role", role.toString()) // Сохраняем роль как строку
@@ -68,6 +77,8 @@ class StoreRepository @Inject constructor(
         val userId = sharedPreferences.getLong("user_id", -1L)
         val roleString = sharedPreferences.getString("user_role", null)
         val role = roleString?.let { try { Role.valueOf(it) } catch (e: Exception) { null } }
+
+        Log.d("UserDebug", "Loaded user: userId=$userId, role=$role")
         return userId to role
     }
 
@@ -350,30 +361,46 @@ class StoreRepository @Inject constructor(
      * @param quantity Количество.
      * @throws IllegalArgumentException Если товара недостаточно на складе.
      */
-    suspend fun addProductToCart(userId: Long, productId: Long, quantity: Long = 1) {
-        if (userId == GUEST_USER_ID) {
-            // Обработка для гостя (например, отдельная таблица или логика в памяти)
+    /**
+     * Добавляет товар в корзину пользователя.
+     * @param productId ID товара.
+     * @param quantity Количество.
+     * @throws IllegalArgumentException Если товара недостаточно на складе.
+     */
+    suspend fun addProductToCart(productId: Long, quantity: Long = 1) {
+        val (userId, role) = getUser()
+        Log.d("CartDebug", "User: userId=$userId, role=$role")
+
+        if (userId == GUEST_USER_ID || role == null) {
+            Log.d("CartDebug", "Adding to guest cart: productId=$productId, quantity=$quantity")
             addGuestCartItem(productId, quantity)
         } else {
-            // Стандартная логика для авторизованных пользователей
+            Log.d("CartDebug", "Adding to user cart: userId=$userId, productId=$productId, quantity=$quantity")
             val product = productDao.getProductById(productId)
-                ?: throw IllegalArgumentException("Товар не найден")
+            Log.d("CartDebug", "Product from DB: $product")
+            if (product == null) throw IllegalArgumentException("Товар не найден")
             if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара на складе")
 
             val cartItem = cartDao.getCartItemByUserIdAndProductId(userId, productId)
             if (cartItem != null) {
                 cartDao.updateCartItemQuantity(cartItem.cartItemId, cartItem.quantity + quantity)
+                Log.d("CartDebug", "Updated cart item: $cartItem")
             } else {
-                cartDao.insertCartItem(
-                    CartItemEntity(
-                        userId = userId,
-                        productId = productId,
-                        quantity = quantity
-                    )
+                val newCartItem = CartItemEntity(
+                    userId = userId,
+                    productId = productId,
+                    quantity = quantity
                 )
+                cartDao.insertCartItem(newCartItem)
+                Log.d("CartDebug", "Inserted new cart item: $newCartItem")
             }
+
+            // Принудительное обновление корзины
+
         }
     }
+
+
     /**
      * Обновляет количество товара в корзине.
      * @param cartItemId ID элемента корзины.
@@ -411,23 +438,28 @@ class StoreRepository @Inject constructor(
     // --- Методы для работы с заказами ---
 
     /**
-     * Оформляет заказ на товары в корзине.
-     * @param userId ID пользователя.
-     * @param items Список товаров с количеством.
+     * Создаёт заказ на основе предоставленных данных.
+     *
+     * @param userId ID пользователя, который оформляет заказ.
+     * @param items Список пар (товар, количество) для заказа.
      * @param shippingAddress Адрес доставки.
      * @return ID созданного заказа.
-     * @throws IllegalArgumentException Если товаров недостаточно на складе.
+     * @throws IllegalArgumentException Если на складе недостаточно товаров.
      */
     suspend fun createOrder(
         userId: Long,
-        items: List<Pair<ProductEntity, Int>>, // Список пар (товар, количество).
+        items: List<Pair<ProductEntity, Int>>, // Список пар (товар, количество)
         shippingAddress: String
     ): Long {
+        // Проверяем доступное количество каждого товара
         items.forEach { (product, quantity) ->
             if (product.stock < quantity) throw IllegalArgumentException("Недостаточно товара ${product.name} на складе")
         }
 
+        // Рассчитываем общую сумму заказа
         val totalAmount = items.sumOf { it.first.price * it.second }
+
+        // Создаём сущность заказа
         val order = OrderEntity(
             userId = userId,
             orderDate = System.currentTimeMillis(),
@@ -435,25 +467,32 @@ class StoreRepository @Inject constructor(
             totalAmount = totalAmount,
             shippingAddress = shippingAddress
         )
+
+        // Формируем список товаров для заказа
         val orderItems = items.map {
             OrderItemEntity(
-                orderId = 0, // Устанавливается после транзакции.
+                orderId = 0, // ID заказа будет установлен после вставки
                 productId = it.first.productId,
                 quantity = it.second,
                 priceAtOrderTime = it.first.price
             )
         }
+
+        // Выполняем транзакцию: создаём заказ и добавляем товары
         val orderId = placeOrderWithItems(order, orderItems)
 
+        // Обновляем остатки на складе
         items.forEach { (product, quantity) ->
             val updatedProduct = product.copy(stock = product.stock - quantity)
             productDao.updateProduct(updatedProduct)
         }
 
+        // Очищаем корзину пользователя
         clearUserCart(userId)
 
         return orderId
     }
+
 
     /**
      * Меняет статус заказа.
@@ -490,5 +529,68 @@ class StoreRepository @Inject constructor(
     fun getOrdersForUserFlow(userId: Long): Flow<List<OrderEntity>> {
         return orderDao.getOrdersForUserFlow(userId)
     }
+
+    /**
+     * Обрабатывает заказ на основе товаров, находящихся в корзине пользователя.
+     *
+     * @param userId ID пользователя, который оформляет заказ.
+     * @param shippingAddress Адрес доставки, введённый пользователем.
+     * @return ID созданного заказа.
+     * @throws IllegalArgumentException Если корзина пуста или в ней нет доступных товаров.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun processOrderFromCart(userId: Long, shippingAddress: String): Long {
+        Log.d("OrderDebug", "Starting processOrderFromCart for userId=$userId")
+
+        val cartItemsFlow = cartDao.getCartItemsForUserFlow(userId)
+
+        return withContext(Dispatchers.IO) { // Важно выполнять операции с БД в IO dispatcher
+            cartItemsFlow.flatMapConcat { cartItems -> // Используем flatMapConcat для обработки списка
+                Log.d("OrderDebug", "Fetched cart items: $cartItems")
+                if (cartItems.isEmpty()) {
+                    flowOf(Result.failure(IllegalArgumentException("Корзина пуста"))) // Возвращаем ошибку как Flow
+                } else {
+                    val products = productDao.getAllProductsFlow().firstOrNull() ?: emptyList()
+                    Log.d("OrderDebug", "Fetched products: $products")
+
+                    val items = cartItems.mapNotNull { cartItem ->
+                        val product = products.find { it.productId == cartItem.productId }
+                        product?.let { it to cartItem.quantity.toInt() }
+                    }
+
+                    if (items.isEmpty()) {
+                        flowOf(Result.failure(IllegalArgumentException("Нет доступных товаров для заказа")))
+                    } else {
+                        flow {
+                            val orderId = createOrder(userId, items, shippingAddress)
+                            emit(Result.success(orderId))
+                        }
+                    }
+                }
+            }.first().fold(
+                onSuccess = { orderId ->
+                    Log.d("OrderDebug", "Order created with ID: $orderId")
+                    clearUserCart(userId)
+                    Log.d("OrderDebug", "Cart cleared for userId=$userId")
+                    orderId
+                },
+                onFailure = { exception ->
+                    Log.e("OrderDebug", "Error creating order:", exception)
+                    throw exception // Пробрасываем исключение дальше
+                }
+            )
+        }
+    }
+
+    // Добавляем новый метод
+    suspend fun refreshCartItems(userId: Long) {
+        val cartItems = cartDao.getCartItems(userId) // Получение списка напрямую
+        // Если у вас используется StateFlow или аналогичный поток, обновите данные
+        Log.d("StoreRepository", "Refreshing cart items for userId=$userId: $cartItems")
+    }
+
+
+
+
 
 }

@@ -35,6 +35,22 @@ fun StoreNavGraph(
                 navController.navigate("main_products")
             }
         }
+        composable("reviews/{productId}") { backStackEntry ->
+            val productId = backStackEntry.arguments?.getString("productId")?.toLongOrNull()
+            if (productId != null) {
+                ReviewsScreen(
+                    userId = userId,
+                    productId = productId,
+                    navController = navController
+                )
+            } else {
+                // В случае ошибки возвращаемся на главную
+                navController.navigate("main_products") {
+                    popUpTo("main_products") { inclusive = true }
+                }
+            }
+        }
+
 
         // Корзина
         composable("cart") {
@@ -96,54 +112,6 @@ fun StoreNavGraph(
             AdminReviewScreen()
         }
 
-//        // Редактирование пользователя
-//        composable("editUser/{userId}") { backStackEntry ->
-//            val userId = backStackEntry.arguments?.getString("userId")?.toLongOrNull()
-//            if (userId != null) {
-//                EditUserScreen(navController = navController, userId = userId)
-//            }
-//        }
-//
-//        // Добавление пользователя
-//        composable("addUser") {
-//            AddUserScreen(navController = navController)
-//        }
-//
-//        // Редактирование продукта
-//        composable("editProduct/{productId}") { backStackEntry ->
-//            val productId = backStackEntry.arguments?.getString("productId")?.toLongOrNull()
-//            if (productId != null) {
-//                EditProductScreen(navController = navController, productId = productId)
-//            }
-//        }
-//
-//        // Добавление продукта
-//        composable("addProduct") {
-//            AddProductScreen(navController = navController)
-//        }
-//
-//        // Редактирование статуса заказа
-//        composable("editOrderStatus/{orderId}") { backStackEntry ->
-//            val orderId = backStackEntry.arguments?.getString("orderId")?.toLongOrNull()
-//            if (orderId != null) {
-//                EditOrderStatusScreen(navController = navController, orderId = orderId)
-//            }
-//        }
-//
-//        // Детали заказа
-//        composable("orderDetails/{orderId}") { backStackEntry ->
-//            val orderId = backStackEntry.arguments?.getString("orderId")?.toLongOrNull()
-//            if (orderId != null) {
-//                OrderDetailsScreen(navController = navController, orderId = orderId)
-//            }
-//        }
-//
-//        // Добавление аксессуара к продукту
-//        composable("addAccessory/{productId}") { backStackEntry ->
-//            val productId = backStackEntry.arguments?.getString("productId")?.toLongOrNull()
-//            if (productId != null) {
-//                AddAccessoryScreen(navController = navController, productId = productId)
-//            }
-//        }
+
     }
 }

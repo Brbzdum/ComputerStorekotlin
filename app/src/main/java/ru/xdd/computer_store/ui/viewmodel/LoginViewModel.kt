@@ -1,6 +1,7 @@
 package ru.xdd.computer_store.ui.viewmodel
 
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,6 +30,8 @@ class LoginViewModel @Inject constructor(private val repository: StoreRepository
                 val userFromDb = repository.getUserByUsername(username)
                 if (userFromDb != null && checkPassword(password, userFromDb.passwordHash)) {
                     repository.saveUser(userFromDb.userId, userFromDb.role)
+                    Log.d("UserDebug", "Logged in and saved user: userId=${userFromDb.userId}, role=${userFromDb.role}")
+
                     _user.value = userFromDb
                 } else {
                     _errorMessage.value = "Неверное имя пользователя или пароль"

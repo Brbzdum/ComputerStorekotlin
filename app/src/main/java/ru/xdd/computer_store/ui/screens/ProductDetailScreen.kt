@@ -53,11 +53,21 @@ fun ProductDetailScreen(
                 Button(
                     onClick = {
                         viewModel.addToCart(details.product.productId, userId)
-
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Добавить в корзину")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        navController.navigate("reviews/$productId")
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Посмотреть отзывы")
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -79,3 +89,4 @@ fun ProductDetailScreen(
         }
     }
 }
+

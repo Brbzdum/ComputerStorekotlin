@@ -1,5 +1,6 @@
 package ru.xdd.computer_store.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,16 +59,11 @@ class MainViewModel @Inject constructor(
 
     fun addToCart(productId: Long, quantity: Long = 1) {
         viewModelScope.launch {
-            val (userId, role) = repository.getUser() // Проверяем, авторизован ли пользователь
-            if (userId != -1L && role != null) {
-                // Если пользователь авторизован, добавляем товар в корзину в базе данных
-                repository.addProductToCart(userId, productId, quantity)
-            } else {
-                // Если пользователь не авторизован, используем гостевую корзину
-                repository.addGuestCartItem(productId, quantity)
-            }
+            Log.d("CartDebug", "Adding productId=$productId to cart")
+            repository.addProductToCart(productId, quantity)
         }
     }
+
 
 
 

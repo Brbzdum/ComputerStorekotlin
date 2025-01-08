@@ -1,5 +1,6 @@
 package ru.xdd.computer_store.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +35,9 @@ class ProfileViewModel @Inject constructor(
     // Загрузка данных профиля
     fun loadProfile() {
         viewModelScope.launch {
-            val (userId, role) = repository.getUser() // Получаем данные из SharedPreferences
+            val (userId, role) = repository.getUser()
+            Log.d("UserDebug", "Profile loaded: userId=$userId, role=$role")// Получаем данные из SharedPreferences
+
             if (userId != -1L && role != null) { // Если пользователь авторизован
                 _userId.value = userId
                 _userRole.value = role

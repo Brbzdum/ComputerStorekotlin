@@ -6,6 +6,8 @@ import ru.xdd.computer_store.model.CartItemEntity
 
 @Dao
 interface CartDao {
+    @Query("SELECT * FROM cart_items WHERE userId = :userId")
+    suspend fun getCartItems(userId: Long): List<CartItemEntity>
 
     @Query("SELECT * FROM cart_items WHERE userId = :userId")
     fun getCartItemsForUserFlow(userId: Long): Flow<List<CartItemEntity>>

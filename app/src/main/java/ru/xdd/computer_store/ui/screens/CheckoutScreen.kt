@@ -56,7 +56,16 @@ fun CheckoutScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+            var errorMessage by remember { mutableStateOf<String?>(null) }
 
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
             Button(
                 onClick = {
                     coroutineScope.launch {
@@ -64,8 +73,7 @@ fun CheckoutScreen(
                             viewModel.placeOrder(userId, address)
                             navController.navigate("orders_screen") // Переход на экран заказов
                         } catch (e: Exception) {
-                            // Обработка ошибки
-                            e.printStackTrace()
+                            errorMessage = e.message ?: "Ошибка оформления заказа"
                         }
                     }
                 },
